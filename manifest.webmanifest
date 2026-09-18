@@ -1,0 +1,18 @@
+{
+  "name": "Inspecciones Calidad Alcolea",
+  "short_name": "Calidad Alcolea",
+  "description": "Captura de incidencias y exportación PPTX/PDF — Refresco Iberia planta Alcolea",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#FAFCFA",
+  "theme_color": "#03A64B",
+  "lang": "es",
+  "icons": [
+    {
+      "src": "./assets/logo-refresco.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
