@@ -89,8 +89,8 @@ function addCover(pdf, assets, model) {
   pdf.text(model.label || COPY.coverLabel, lab.x, lab.y + lab.h * 0.75);
   pdf.setTextColor(...hexRgb(COLORS.green));
   const title = mmBox(L.coverTitle);
-  pdf.setFontSize(26);
-  pdf.text((model.title || '').toUpperCase(), title.x, title.y + 8, { maxWidth: title.w });
+  pdf.setFontSize(28);
+  pdf.text((model.title || '').toUpperCase(), title.x, title.y + 10, { maxWidth: title.w });
   pdf.setTextColor(...hexRgb(COLORS.charcoal));
   const sub = mmBox(L.coverSubtitle);
   pdf.setFontSize(12);

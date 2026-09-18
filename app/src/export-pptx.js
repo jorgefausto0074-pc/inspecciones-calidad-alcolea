@@ -97,7 +97,7 @@ function addCover(pptx, assets, model) {
   });
   slide.addText((model.title || '').toUpperCase(), {
     x: L.coverTitle.x, y: L.coverTitle.y, w: L.coverTitle.w, h: L.coverTitle.h,
-    fontSize: 28, bold: true, color: COLORS.greenHex, fontFace: 'Calibri',
+    fontSize: 30, bold: true, color: COLORS.greenHex, fontFace: 'Calibri',
     align: 'left', valign: 'top', margin: 0,
   });
   slide.addText((model.subtitle || '').toUpperCase(), {

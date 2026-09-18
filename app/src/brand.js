@@ -40,7 +40,7 @@ export const ASSETS = {
 };
 
 /** Native logo pixel size (clean wordmark). Used to keep object-fit contain. */
-export const LOGO_NATIVE = { w: 1216, h: 743 };
+export const LOGO_NATIVE = { w: 1192, h: 719 };
 
 export const SLIDE = { w: 13.333, h: 7.5 };
 
@@ -58,7 +58,7 @@ export const LAYOUT = {
   coverLogoCard: { x: 0.78, y: 1.05, w: 2.55, h: 1.62 },
   coverLogo: { x: 0.98, y: 1.22, h: 0.92 },
   coverLabel: { x: 0.78, y: 2.82, w: 7.4, h: 0.28 },
-  coverTitle: { x: 0.78, y: 3.12, w: 7.6, h: 1.35 },
+  coverTitle: { x: 0.78, y: 3.08, w: 6.55, h: 1.45 },
   coverSubtitle: { x: 0.78, y: 4.52, w: 8.2, h: 0.38 },
   coverOrbGreen: { x: 10.55, y: 0.05, w: 3.55, h: 3.55 },
   coverOrbOrange: { x: 10.05, y: 2.42, w: 1.95, h: 1.95 },
