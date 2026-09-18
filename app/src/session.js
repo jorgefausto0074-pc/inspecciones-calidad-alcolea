@@ -85,10 +85,14 @@ export function removePhoto(session, id) {
   return saveSession(session);
 }
 
+export const MOVE_TOAST_OK = 'Orden actualizado';
+export const MOVE_TOAST_FIRST = 'Ya es la primera de este departamento';
+export const MOVE_TOAST_LAST = 'Ya es la última de este departamento';
+
 /**
  * Reorder a photo within its department (not the flat capture array).
- * Previous implementation only swapped adjacent flat-array neighbours, so ↑/↓
- * in Preview/Lista silently no-oped when a different department sat in between.
+ * Rebuilds the department subsequence and writes it back into the original
+ * flat-array slots so interleaved departments stay put.
  */
 export function movePhoto(session, id, dir) {
   const photos = session.photos;
@@ -103,11 +107,29 @@ export function movePhoto(session, id, dir) {
   const pos = deptIdxs.indexOf(i);
   const targetPos = pos + step;
   if (pos < 0 || targetPos < 0 || targetPos >= deptIdxs.length) return session;
-  const j = deptIdxs[targetPos];
-  const tmp = photos[i];
-  photos[i] = photos[j];
-  photos[j] = tmp;
+
+  const deptPhotos = deptIdxs.map((idx) => photos[idx]);
+  const [moved] = deptPhotos.splice(pos, 1);
+  deptPhotos.splice(targetPos, 0, moved);
+  const next = photos.slice();
+  for (let k = 0; k < deptIdxs.length; k += 1) {
+    next[deptIdxs[k]] = deptPhotos[k];
+  }
+  session.photos = next;
   return saveSession(session);
+}
+
+/** Move within department and report whether it happened (for Lista toasts). */
+export function attemptMovePhoto(session, id, dir) {
+  const up = dir < 0;
+  const st = photoMoveState(session.photos, id);
+  if (up && !st.canUp) {
+    return { session, moved: false, message: MOVE_TOAST_FIRST };
+  }
+  if (!up && !st.canDown) {
+    return { session, moved: false, message: MOVE_TOAST_LAST };
+  }
+  return { session: movePhoto(session, id, dir), moved: true, message: MOVE_TOAST_OK };
 }
 
 /** Whether this photo can move up/down inside its department. */

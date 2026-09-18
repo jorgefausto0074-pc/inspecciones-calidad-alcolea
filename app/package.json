@@ -1,7 +1,7 @@
 {
   "name": "inspecciones-calidad-alcolea",
   "private": true,
-  "version": "1.3.0",
+  "version": "1.3.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -9,7 +9,7 @@
     "preview": "vite preview --host 127.0.0.1 --port 8787",
     "serve": "vite preview --host 127.0.0.1 --port 8787",
     "sample": "node scripts/generate-sample.mjs",
-    "test": "node scripts/test-share-export.mjs && node scripts/test-v3-design.mjs"
+    "test": "node scripts/test-share-export.mjs && node scripts/test-v3-design.mjs && node scripts/test-lista-reorder.mjs"
   },
   "devDependencies": {
     "vite": "^8.3.0"

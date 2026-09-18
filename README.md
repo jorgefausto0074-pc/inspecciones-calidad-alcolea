@@ -3,10 +3,25 @@
 Aplicación web (PWA) para capturar incidencias de planta en **Refresco Iberia — planta Alcolea**, montar el informe con la estética de la plantilla corporativa y exportar **PPTX** y **PDF**.
 
 **PRD:** v1.3 (aprobado 2026-09-18)  
-**App:** v1.3.0 — diseño visual v3 (Refresco) + reordenar fotos en Preview  
+**App:** v1.3.1 — Lista ↑↓ reordena fotos dentro del departamento (APK/WebView)  
 **Cliente:** Jorge Quezada Ortega — Coordinador de Calidad, planta Alcolea (Córdoba)
 
 ---
+
+## Actualización v1.3.1 (Lista: reordenar fotos)
+
+En la pestaña **Lista**, los botones verdes **↑ / ↓** no reordenaban (o parecía que no): en el primero/último del departamento no pasaba nada y en Android WebView el toque se podía perder.
+
+- ↑↓ reordenan **dentro del mismo departamento** (igual que Preview).
+- El botón que no puede mover se deshabilita; aviso breve «Orden actualizado» o «Ya es la primera/última de este departamento».
+- Área de toque más grande + `touch-action: manipulation` para el WebView del APK.
+- Versión **1.3.1** (`versionCode 4`). Desinstale el APK 1.3.0 antes de instalar este.
+
+### Web (GitHub Pages) — refrescar caché
+
+1. Abrir https://jorgefausto0074-pc.github.io/inspecciones-calidad-alcolea/
+2. **Hard-refresh:** Ctrl+Shift+R / Cmd+Shift+R.
+3. Service worker: `inspecciones-calidad-v1-3-1`.
 
 ## Actualización v1.3.0 (diseño visual v3)
 
@@ -101,15 +116,15 @@ El APK **debug** precompilado está en el repositorio:
 | ZIP de la web (`dist`) | [`artifacts/inspecciones-calidad-web.zip`](artifacts/inspecciones-calidad-web.zip) |
 
 - **Package ID:** `com.refresco.alcolea.calidad`
-- **Versión:** `1.3.0` (`versionCode 3`) — desinstalar el APK anterior antes de instalar este
+- **Versión:** `1.3.1` (`versionCode 4`) — desinstalar el APK anterior antes de instalar este
 - **Contraseña:** `CalidadAlcolea2026`
 - **Permisos:** `CAMERA`, `READ_MEDIA_IMAGES`, `READ_EXTERNAL_STORAGE` / `WRITE_EXTERNAL_STORAGE` (Android ≤12)
 - Es un APK **debug** (clave de depuración). Válido para pruebas internas; no para Play Store.
 
-### Instalar (sideload) — v1.3.0
+### Instalar (sideload) — v1.3.1
 
 1. **Desinstalar** cualquier «Inspecciones Calidad» previa (Ajustes → Apps → Desinstalar). No actualice encima del debug viejo.
-2. Copiar el APK v1.3.0 al teléfono (USB, Drive, correo interno, o descargarlo del repo si es público).
+2. Copiar el APK v1.3.1 al teléfono (USB, Drive, correo interno, o descargarlo del repo si es público).
 3. En Android: **Ajustes → Seguridad** (o Apps) → permitir **Instalar apps desconocidas**.
 4. Abrir `inspecciones-calidad-debug.apk` e instalar.
 5. Conceder **Cámara** (y fotos/galería si el sistema lo pide).
@@ -153,7 +168,7 @@ Tras un push a `main`, Actions vuelve a construir y publica Pages. Compruebe el 
 
 ### Regenerar el APK
 
-El wrap Capacitor está en [`android-wrap/`](android-wrap/) (plugins `@capacitor/filesystem` y `@capacitor/share`, `versionName 1.3.0`). Para generar un APK nuevo a partir de `app/dist`:
+El wrap Capacitor está en [`android-wrap/`](android-wrap/) (plugins `@capacitor/filesystem` y `@capacitor/share`, `versionName 1.3.1`). Para generar un APK nuevo a partir de `app/dist`:
 
 ```bash
 cd app && npm ci && npm run build
@@ -198,7 +213,7 @@ inspecciones-calidad-alcolea/
   .github/workflows/pages.yml   # build Vite + GitHub Pages
   samples/informe-ejemplo-alcolea.pptx
   artifacts/inspecciones-calidad-debug.apk
-  android-wrap/                 # Capacitor 8 + Filesystem/Share (APK 1.3.0)
+  android-wrap/                 # Capacitor 8 + Filesystem/Share (APK 1.3.1)
   app/
     src/           # código fuente (share.js, export PPTX/PDF)
     public/        # SW v2-export, logo y sello
