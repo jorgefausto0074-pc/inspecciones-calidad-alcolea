@@ -14,16 +14,24 @@ https://jorgefausto0074-pc.github.io/inspecciones-calidad-alcolea/
 
 Varios usuarios de Calidad pueden abrir el **mismo enlace** e introducir la **misma contraseña**. No hay cuentas individuales en v1.
 
-El despliegue es automático: cada push a `main` ejecuta GitHub Actions, construye `app/` con Vite y publica `app/dist`.
+El workflow [`.github/workflows/pages.yml`](.github/workflows/pages.yml) construye `app/` (`npm ci` + `npm run build`) y:
 
-### Si Pages no publica (repo privado + plan Free)
+1. Publica el estático en la rama **`gh-pages`** (listo para «Deploy from a branch»).
+2. Intenta el despliegue oficial **GitHub Actions → Pages**.
 
-GitHub Pages en repositorios **privados** exige GitHub Pro / Team / Enterprise. En el plan Free hay que elegir una de estas opciones (preferible mantener el repo privado si el plan lo permite):
+El **build ya funciona**. El deploy oficial falla con 404 hasta que el **dueño del repo** active Pages (esta automatización no tiene permiso de administración para encenderlo).
 
-1. **Mantener el repositorio privado:** subir de plan a GitHub Pro y, en el repo, **Settings → Pages → Source: GitHub Actions**. Reejecutar el workflow *Deploy GitHub Pages*.
-2. **Hacer el repositorio público (solo para Pages en plan Free):** **Settings → General → Danger Zone → Change repository visibility → Public**. La app sigue protegida con contraseña. Después: **Settings → Pages → Source: GitHub Actions** y reejecutar el workflow.
+### Activar Pages (una sola vez, dueño del repo)
 
-El workflow ya está en [`.github/workflows/pages.yml`](.github/workflows/pages.yml). No hace falta volver a subir el código.
+1. Si el plan es **GitHub Free** y el repo sigue **privado**, Pages no sirve el sitio. Elija una opción (se prefiere privado si el plan lo permite):
+   - **Pro / Team:** deje el repo privado.
+   - **Free:** **Settings → General → Danger Zone → Change repository visibility → Public**. La app sigue protegida con contraseña `CalidadAlcolea2026`.
+2. **Settings → Pages**:
+   - **Source: GitHub Actions**, o
+   - **Deploy from a branch** → rama `gh-pages` → carpeta `/ (root)`.
+3. Reejecutar el workflow **Deploy GitHub Pages** (Actions → el run de `main` → *Re-run jobs*), o esperar el próximo push a `main`.
+
+Hasta que eso ocurra, la URL de arriba devolverá 404. El código, el APK y el workflow ya están en GitHub.
 
 ---
 
