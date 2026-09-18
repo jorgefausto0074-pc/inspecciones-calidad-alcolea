@@ -57,7 +57,8 @@ export function buildDisplayName(code, ubicacion, ts = Date.now()) {
 export function defaultCover(date = new Date()) {
   const year = date.getFullYear();
   return {
-    title: `${APP_CONFIG.defaultTitlePrefix} ${year}`,
+    // v3 cover title has NO year; month/year stays editable on slideTitle (portada).
+    title: APP_CONFIG.defaultTitlePrefix,
     subtitle: APP_CONFIG.plantName,
     slideTitle: `INSPECCIÓN ${MONTHS_ES[date.getMonth()]} ${year}`,
   };

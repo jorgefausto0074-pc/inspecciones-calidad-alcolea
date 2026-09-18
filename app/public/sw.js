@@ -1,10 +1,12 @@
 /* Service worker PWA — static assets only; never intercept blob:/data: or downloads */
-const CACHE = 'inspecciones-calidad-v2-export';
+const CACHE = 'inspecciones-calidad-v3-brand';
 const ASSETS = [
   './',
   './index.html',
   './manifest.webmanifest',
-  './assets/logo-diamante.png',
+  './assets/logo-refresco.png',
+  './assets/cenefa-ondulada.png',
+  './assets/logo-mascotas.png',
   './assets/sello-resuelto.png',
 ];
 

@@ -4,9 +4,12 @@ import {
   loadSession, saveSession, clearSession, createEmptySession,
   isAuthenticated, setAuthenticated,
   addPhoto, updatePhoto, removePhoto, movePhoto, groupPhotosByDept,
+  photoMoveState,
 } from './session.js';
 import { exportPptx } from './export-pptx.js';
-import { exportPdf, buildPreviewSlides } from './export-pdf.js';
+import { exportPdf } from './export-pdf.js';
+import { buildPreviewSlides, locationLabel, commentTitle, statusLabel } from './slides.js';
+import { ASSETS, LAYOUT, boxStyle, cardSlots, APP_VERSION, COPY } from './brand.js';
 import { shareOrDownload, downloadOnly } from './share.js';
 
 let session = loadSession();
@@ -70,7 +73,7 @@ function renderGate() {
   app.innerHTML = `
     <div class="gate">
       <div class="card">
-        <img class="logo" src="./assets/logo-diamante.png" alt="Logo Calidad" />
+        <img class="logo" src="${ASSETS.logo}" alt="Refresco" />
         <h1>Inspecciones Calidad</h1>
         <p>Refresco Iberia · Planta Alcolea</p>
         <form id="login-form">
@@ -97,7 +100,7 @@ function toolbar() {
   return `
     <div class="header">
       <div class="brand">
-        <img src="./assets/logo-diamante.png" alt="" />
+        <img class="brand-logo" src="${ASSETS.logo}" alt="Refresco" />
         <div>
           <h1>Inspecciones Calidad · Alcolea</h1>
           <div style="opacity:.85;font-size:.85rem">Sesión = 1 informe · editable tras exportar</div>
@@ -217,7 +220,7 @@ function renderPortada() {
   return `
     <div class="card">
       <h2 style="margin-top:0">Portada y títulos (editables)</h2>
-      <p>Los valores se rellenan con mes/año de la sesión; puede reescribirlos antes de exportar.</p>
+      <p>El título de portada v3 es <strong>INSPECCION INCIDENCIAS CALIDAD</strong> (sin año). El mes/año sigue editable aquí; las fichas v3 muestran el departamento y «FICHA N DE M».</p>
       <div class="field"><label for="coverTitle">Título de portada</label>
         <input id="coverTitle" value="${escapeAttr(session.coverTitle)}" /></div>
       <div class="field"><label for="coverSubtitle">Subtítulo</label>
@@ -228,33 +231,83 @@ function renderPortada() {
     </div>`;
 }
 
+function slideChromeHTML(pageNum) {
+  const L = LAYOUT;
+  const page = pageNum
+    ? `<div class="abs page-num" style="${boxStyle(L.pageNum)}">${pageNum}</div>`
+    : '';
+  return `
+    <div class="abs" style="${boxStyle(L.cenefa)}">
+      <img class="cenefa" src="${ASSETS.cenefa}" alt="" />
+    </div>
+    <img class="abs mascots" src="${ASSETS.mascots}" alt="" style="${boxStyle(L.mascots)}" />
+    <div class="abs footer-meta" style="${boxStyle(L.footerMeta)}">${escapeAttr(COPY.footerMeta)}</div>
+    <div class="abs wordmark" style="${boxStyle(L.wordmark)}">${escapeAttr(COPY.wordmark)}</div>
+    ${page}`;
+}
+
+function renderSlideV3(s, pageNum) {
+  const L = LAYOUT;
+  if (s.type === 'cover') {
+    return `
+      <div class="abs orb" style="${boxStyle(L.coverOrbGreen)}background:${'#03A64B'}"></div>
+      <div class="abs orb" style="${boxStyle(L.coverOrbOrange)}background:${'#E8922A'}"></div>
+      <div class="abs orb" style="${boxStyle(L.coverOrbWhite)}background:${'#F3FBF6'};box-shadow:0 0 0 1px rgba(3,166,75,.08)"></div>
+      <div class="abs logo-card" style="${boxStyle(L.coverLogoCard)}">
+        <img src="${ASSETS.logo}" alt="Refresco" />
+      </div>
+      <div class="abs cover-label" style="${boxStyle(L.coverLabel)}">${escapeAttr(s.label || COPY.coverLabel)}</div>
+      <h2 class="abs cover-title" style="${boxStyle(L.coverTitle)}">${escapeAttr(s.title)}</h2>
+      <p class="abs cover-sub" style="${boxStyle(L.coverSubtitle)}">${escapeAttr(s.subtitle)}</p>
+      ${slideChromeHTML(null)}`;
+  }
+  if (s.type === 'section') {
+    return `
+      <div class="abs orb" style="${boxStyle(L.sectionOrbLeft)}background:#F0E4D0"></div>
+      <div class="abs orb" style="${boxStyle(L.sectionOrbRight)}background:#D8F3E3"></div>
+      <div class="abs section-kicker" style="${boxStyle(L.sectionKicker)}">${escapeAttr(COPY.departamento)}</div>
+      <div class="abs section-dept" style="${boxStyle(L.sectionDept)}">${escapeAttr(s.deptName)}</div>
+      <div class="abs section-title" style="${boxStyle(L.sectionTitle)}">${escapeAttr(s.title)}</div>
+      ${slideChromeHTML(pageNum)}`;
+  }
+  const slots = cardSlots(s.photos.length);
+  const cards = s.photos.map((p, idx) => {
+    const box = slots[idx];
+    const st = photoMoveState(session.photos, p.id);
+    const stampClass = p.status === 'resolved' ? 'resolved' : 'pending';
+    return `<div class="abs photo-card" data-id="${p.id}" style="${boxStyle(box)}">
+      <div class="photo-frame">
+        <img class="photo" src="${p.dataUrl}" alt="" />
+        <span class="status-stamp ${stampClass}">${statusLabel(p)}</span>
+        <div class="slot-tools">
+          <button type="button" data-photo-move="up" data-id="${p.id}" ${st.canUp ? '' : 'disabled'} title="Subir en el departamento">↑</button>
+          <button type="button" data-photo-move="down" data-id="${p.id}" ${st.canDown ? '' : 'disabled'} title="Bajar en el departamento">↓</button>
+        </div>
+      </div>
+      <div class="photo-caption">
+        <div class="loc-code">${escapeAttr(locationLabel(p))}</div>
+        <div class="cap-title">${escapeAttr(commentTitle(p))}</div>
+      </div>
+    </div>`;
+  }).join('');
+  return `
+    <div class="abs orb" style="${boxStyle(L.fichaOrb)}background:#D8F3E3"></div>
+    <div class="abs ficha-dept" style="${boxStyle(L.fichaDept)}">${escapeAttr(s.deptName)}</div>
+    <div class="abs ficha-index" style="${boxStyle(L.fichaIndex)}">FICHA ${s.fichaIndex} DE ${s.fichaTotal}</div>
+    <div class="abs ficha-badge" style="${boxStyle(L.fichaBadge)}">${escapeAttr(s.deptSection)}</div>
+    ${cards}
+    ${slideChromeHTML(pageNum)}`;
+}
+
 function renderPreview() {
   const slides = buildPreviewSlides(session);
   if (!slides.length) return `<div class="card">Sin contenido.</div>`;
   if (previewIdx >= slides.length) previewIdx = slides.length - 1;
   if (previewIdx < 0) previewIdx = 0;
   const s = slides[previewIdx];
-  let inner = '';
-  if (s.type === 'cover') {
-    inner = `<div class="cover-slide"><div><h2>${escapeAttr(s.title)}</h2><p>${escapeAttr(s.subtitle)}</p></div>
-      <img class="logo" src="./assets/logo-diamante.png" alt="" /></div>`;
-  } else if (s.type === 'section') {
-    inner = `<div class="section-slide">${escapeAttr(s.title)}</div>`;
-  } else {
-    const single = s.photos.length === 1 ? ' single' : '';
-    inner = `<div class="slide-title">${escapeAttr(s.slideTitle)}</div>
-      <div class="pair">${s.photos.map((p) => {
-        const cap = [p.comentario, p.ubicacion].filter(Boolean).join(' — ').toUpperCase();
-        return `<div class="slot${single}">
-          <img class="photo" src="${p.dataUrl}" alt="" />
-          ${p.status==='resolved' ? '<img class="stamp" src="./assets/sello-resuelto.png" alt="RESUELTO" />' : '<span class="pend-tag">PENDIENTE</span>'}
-          <div class="cap">${escapeAttr(cap)}</div>
-        </div>`;
-      }).join('')}</div>`;
-  }
   return `
     <div class="card preview-stage">
-      <div class="slide-16x9">${inner}</div>
+      <div class="slide-16x9">${renderSlideV3(s, previewIdx + 1)}</div>
       <div class="preview-nav">
         <button type="button" class="secondary" id="prev-slide">← Anterior</button>
         <span class="status">Diapositiva ${previewIdx + 1} / ${slides.length}</span>
@@ -300,7 +353,7 @@ function render() {
   else body = renderExport();
 
   app.innerHTML = `<div class="app-shell">${toolbar()}${body}
-    <footer class="note">PWA local · Refresco Iberia Alcolea · v1.2 (export Filesystem/Share fix)</footer></div>`;
+    <footer class="note">PWA local · Refresco Iberia Alcolea · v${APP_VERSION} (diseño visual v3)</footer></div>`;
   bind();
 }
 
@@ -527,6 +580,17 @@ function bindPreview() {
   document.getElementById('next-slide')?.addEventListener('click', () => {
     previewIdx = Math.min(slides.length - 1, previewIdx + 1);
     render();
+  });
+  document.querySelectorAll('[data-photo-move]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.id;
+      const dir = btn.dataset.photoMove === 'up' ? -1 : 1;
+      session = movePhoto(session, id, dir);
+      const next = buildPreviewSlides(session);
+      const idx = next.findIndex((sl) => sl.type === 'content' && sl.photos?.some((p) => p.id === id));
+      if (idx >= 0) previewIdx = idx;
+      render();
+    });
   });
 }
 
