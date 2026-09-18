@@ -4,7 +4,7 @@ import {
   loadSession, saveSession, clearSession, createEmptySession,
   isAuthenticated, setAuthenticated,
   addPhoto, updatePhoto, removePhoto, movePhoto, groupPhotosByDept,
-  photoMoveState,
+  photoMoveState, attemptMovePhoto,
 } from './session.js';
 import { exportPptx } from './export-pptx.js';
 import { exportPdf } from './export-pdf.js';
@@ -27,7 +27,22 @@ function toast(msg, err = false) {
   el.className = `toast${err ? ' err' : ''}`;
   el.textContent = msg;
   document.body.appendChild(el);
-  setTimeout(() => el.remove(), 3200);
+  setTimeout(() => el.remove(), 2200);
+}
+
+/** Click + touchend with debounce so Android WebView does not swallow Lista ↑↓. */
+function bindTap(el, handler) {
+  let last = 0;
+  const run = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const now = Date.now();
+    if (now - last < 350) return;
+    last = now;
+    handler(e);
+  };
+  el.addEventListener('click', run);
+  el.addEventListener('touchend', run, { passive: false });
 }
 
 function fileToDataUrl(file) {
@@ -185,7 +200,9 @@ function renderLista() {
   }
   return `<div class="card"><div class="photo-list">${groups.map(([code, photos]) => {
     const dept = deptByCode(code);
-    return `<div class="dept-group-title">${dept.section}</div>` + photos.map((p) => `
+    return `<div class="dept-group-title">${dept.section}</div>` + photos.map((p) => {
+      const st = photoMoveState(session.photos, p.id);
+      return `
       <div class="photo-item" data-id="${p.id}">
         <img src="${p.dataUrl}" alt="" />
         <div>
@@ -202,13 +219,18 @@ function renderLista() {
               <option value="resolved" ${p.status==='resolved'?'selected':''}>Problema resuelto</option>
             </select>
           </div>
-          <div class="row">
-            <button type="button" class="secondary" data-act="up">↑</button>
-            <button type="button" class="secondary" data-act="down">↓</button>
-            <button type="button" class="danger" data-act="del">Borrar</button>
+          <div class="row lista-actions">
+            <span class="lista-move-hit" data-act="up">
+              <button type="button" class="secondary lista-move" ${st.canUp ? '' : 'disabled'} title="Subir en el departamento" aria-label="Subir">↑</button>
+            </span>
+            <span class="lista-move-hit" data-act="down">
+              <button type="button" class="secondary lista-move" ${st.canDown ? '' : 'disabled'} title="Bajar en el departamento" aria-label="Bajar">↓</button>
+            </span>
+            <button type="button" class="danger lista-del" data-act="del">Borrar</button>
           </div>
         </div>
-      </div>`).join('');
+      </div>`;
+    }).join('');
   }).join('')}</div></div>`;
 }
 
@@ -542,20 +564,21 @@ function bindLista() {
         if (inp.dataset.f === 'code' || inp.dataset.f === 'status') render();
       });
     });
-    item.querySelectorAll('[data-act]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const act = btn.dataset.act;
+    item.querySelectorAll('[data-act]').forEach((el) => {
+      bindTap(el, () => {
+        const act = el.dataset.act;
         if (act === 'del') {
           if (!confirm('¿Borrar esta foto del informe?')) return;
           session = removePhoto(session, id);
           render();
-        } else if (act === 'up') {
-          session = movePhoto(session, id, -1);
-          render();
-        } else if (act === 'down') {
-          session = movePhoto(session, id, 1);
-          render();
+          return;
         }
+        if (act !== 'up' && act !== 'down') return;
+        const dir = act === 'up' ? -1 : 1;
+        const result = attemptMovePhoto(session, id, dir);
+        session = result.session;
+        toast(result.message, !result.moved);
+        if (result.moved) render();
       });
     });
   });
@@ -582,7 +605,9 @@ function bindPreview() {
     render();
   });
   document.querySelectorAll('[data-photo-move]').forEach((btn) => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (btn.disabled) return;
       const id = btn.dataset.id;
       const dir = btn.dataset.photoMove === 'up' ? -1 : 1;
       session = movePhoto(session, id, dir);

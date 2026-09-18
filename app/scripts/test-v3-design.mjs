@@ -124,6 +124,21 @@ ok(session.photos.map((p) => p.id).join(',') === 'j2,ex1,j1', 'moving last-in-de
 session = movePhoto(session, 'j1', -1);
 ok(session.photos.map((p) => p.id).join(',') === 'j1,ex1,j2', 'move j1 up restores original dept order');
 
+// Three photos in one dept, interleaved with another: rebuild subsequence, leave other dept slots
+session.photos = [
+  photo('j1', 'J-'),
+  photo('ex1', 'EX'),
+  photo('j2', 'J-'),
+  photo('ex2', 'EX'),
+  photo('j3', 'J-'),
+];
+session = movePhoto(session, 'j2', 1);
+ok(session.photos.map((p) => p.id).join(',') === 'j1,ex1,j3,ex2,j2', '3-photo dept: move middle down rebuilds subsequence');
+ok(session.photos[1].id === 'ex1' && session.photos[3].id === 'ex2', 'interleaved EX slots unchanged');
+const g2 = groupPhotosByDept(session.photos, ['EX', 'J-']);
+ok(g2.find(([c]) => c === 'J-')[1].map((p) => p.id).join(',') === 'j1,j3,j2', 'grouped JARABE after middle-down');
+ok(g2.find(([c]) => c === 'EX')[1].map((p) => p.id).join(',') === 'ex1,ex2', 'grouped EX order unchanged');
+
 // --- Slide model ---
 session.coverTitle = 'INSPECCION INCIDENCIAS CALIDAD';
 session.coverSubtitle = 'REFRESCO IBERIA PLANTA ALCOLEA';
