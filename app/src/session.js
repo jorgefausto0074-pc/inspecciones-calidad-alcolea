@@ -85,17 +85,40 @@ export function removePhoto(session, id) {
   return saveSession(session);
 }
 
+/**
+ * Reorder a photo within its department (not the flat capture array).
+ * Previous implementation only swapped adjacent flat-array neighbours, so ↑/↓
+ * in Preview/Lista silently no-oped when a different department sat in between.
+ */
 export function movePhoto(session, id, dir) {
-  const i = session.photos.findIndex((p) => p.id === id);
+  const photos = session.photos;
+  const i = photos.findIndex((p) => p.id === id);
   if (i < 0) return session;
-  const j = i + dir;
-  if (j < 0 || j >= session.photos.length) return session;
-  const sameDept = session.photos[i].code === session.photos[j].code;
-  if (!sameDept) return session;
-  const tmp = session.photos[i];
-  session.photos[i] = session.photos[j];
-  session.photos[j] = tmp;
+  const step = dir < 0 ? -1 : 1;
+  const code = photos[i].code;
+  const deptIdxs = [];
+  for (let k = 0; k < photos.length; k += 1) {
+    if (photos[k].code === code) deptIdxs.push(k);
+  }
+  const pos = deptIdxs.indexOf(i);
+  const targetPos = pos + step;
+  if (pos < 0 || targetPos < 0 || targetPos >= deptIdxs.length) return session;
+  const j = deptIdxs[targetPos];
+  const tmp = photos[i];
+  photos[i] = photos[j];
+  photos[j] = tmp;
   return saveSession(session);
+}
+
+/** Whether this photo can move up/down inside its department. */
+export function photoMoveState(photos, id) {
+  const list = photos || [];
+  const i = list.findIndex((p) => p.id === id);
+  if (i < 0) return { canUp: false, canDown: false };
+  const code = list[i].code;
+  const dept = list.filter((p) => p.code === code);
+  const pos = dept.findIndex((p) => p.id === id);
+  return { canUp: pos > 0, canDown: pos >= 0 && pos < dept.length - 1 };
 }
 
 export function groupPhotosByDept(photos, order) {

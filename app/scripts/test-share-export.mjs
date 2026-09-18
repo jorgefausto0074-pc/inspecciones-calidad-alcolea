@@ -44,7 +44,7 @@ ok(!mainSrc.includes('en Descargas`)'), 'no blind "en Descargas" toast in doExpo
 // 3) SW must skip blob:
 const sw = readFileSync(path.join(root, 'public/sw.js'), 'utf8');
 ok(sw.includes("url.protocol === 'blob:'"), 'SW skips blob:');
-ok(sw.includes('inspecciones-calidad-v2-export'), 'SW cache bumped');
+ok(sw.includes('inspecciones-calidad-v3-brand'), 'SW cache bumped');
 
 // 4) Runtime: blobToBase64 + triggerDownload in a minimal DOM mock
 globalThis.window = globalThis;
