@@ -38,5 +38,5 @@
 - `http://127.0.0.1:8787/` y `:8790/` sirven `app/dist`.
 
 ## Notas / blockers
-- Plugins `@capacitor/share` y `@capacitor/filesystem` **no** están instalados; en APK se usa Web Share API del WebView (o fallback descarga). Opcional instalarlos más adelante.
-- APK sigue siendo **debug** (no release firmado).
+- Plugins `@capacitor/share` y `@capacitor/filesystem` **instalados** en `app/` y `android-wrap/` (v1.2.0). El APK escribe a disco y abre el menú compartir; la web usa selector de archivo / descarga honesta.
+- APK sigue siendo **debug** (no release firmado). Desinstalar el APK anterior antes de instalar v1.2.0.

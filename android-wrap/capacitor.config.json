@@ -1,0 +1,11 @@
+{
+  "appId": "com.refresco.alcolea.calidad",
+  "appName": "Inspecciones Calidad",
+  "webDir": "../app/dist",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "allowMixedContent": true
+  }
+}

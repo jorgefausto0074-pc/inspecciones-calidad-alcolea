@@ -1,0 +1,19 @@
+{
+  "name": "inspecciones-calidad-android",
+  "private": true,
+  "version": "1.2.0",
+  "description": "Capacitor Android wrapper for Inspecciones Calidad",
+  "scripts": {
+    "sync": "npx cap sync android",
+    "copy": "npx cap copy android",
+    "open": "npx cap open android",
+    "build:apk": "cd android && ./gradlew assembleDebug"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.5.2",
+    "@capacitor/cli": "^8.5.2",
+    "@capacitor/core": "^8.5.2",
+    "@capacitor/filesystem": "^8.1.2",
+    "@capacitor/share": "^8.0.1"
+  }
+}

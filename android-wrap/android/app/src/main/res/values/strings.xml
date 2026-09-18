@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Inspecciones Calidad</string>
+    <string name="title_activity_main">Inspecciones Calidad</string>
+    <string name="package_name">com.refresco.alcolea.calidad</string>
+    <string name="custom_url_scheme">com.refresco.alcolea.calidad</string>
+</resources>

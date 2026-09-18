@@ -7,7 +7,7 @@ import {
 } from './session.js';
 import { exportPptx } from './export-pptx.js';
 import { exportPdf, buildPreviewSlides } from './export-pdf.js';
-import { shareOrDownload, triggerDownload } from './share.js';
+import { shareOrDownload, downloadOnly } from './share.js';
 
 let session = loadSession();
 let tab = 'captura';
@@ -280,7 +280,7 @@ function renderExport() {
         <button type="button" id="btn-pptx-dl" class="ghost" style="color:#333;border-color:var(--border);background:#eee" ${disabled}>Solo descargar PPTX</button>
         <button type="button" id="btn-pdf-dl" class="ghost" style="color:#333;border-color:var(--border);background:#eee" ${disabled}>Solo descargar PDF</button>
       </div>
-      <p class="hint-sm">Si el compartir no está disponible, se guarda en Descargas y puede moverlo donde quiera.</p>
+      <p class="hint-sm">En APK el archivo se escribe en Documentos/Descargas y luego abre el menú compartir. En PC use el selector de guardar o Descargas del navegador.</p>
       <hr style="margin:1.2rem 0;border:none;border-top:1px solid var(--border)" />
       <p>Tras exportar puede seguir editando y volver a exportar. Para empezar un informe nuevo:</p>
       <button type="button" class="danger" id="btn-reset">Descartar sesión (pedir confirmación)</button>
@@ -300,7 +300,7 @@ function render() {
   else body = renderExport();
 
   app.innerHTML = `<div class="app-shell">${toolbar()}${body}
-    <footer class="note">PWA local · Refresco Iberia Alcolea · v1.1 (PRD v1.3 + UX share/sello/fuentes)</footer></div>`;
+    <footer class="note">PWA local · Refresco Iberia Alcolea · v1.2 (export Filesystem/Share fix)</footer></div>`;
   bind();
 }
 
@@ -537,17 +537,19 @@ async function doExport(kind, mode) {
     const mime = kind === 'pptx'
       ? 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
       : 'application/pdf';
-    if (mode === 'download') {
-      triggerDownload(result.blob, result.fileName);
-      toast(`${kind.toUpperCase()} en Descargas`);
-    } else {
-      await shareOrDownload(result.blob, result.fileName, mime, { toast });
+    // Helpers toast accurately — never claim "descargado" unless write/save succeeded
+    const out = mode === 'download'
+      ? await downloadOnly(result.blob, result.fileName, mime, { toast })
+      : await shareOrDownload(result.blob, result.fileName, mime, { toast, mode: 'share' });
+    if (out?.method === 'cancelled') {
+      toast('Exportación cancelada', true);
     }
     session.lastExportAt = new Date().toISOString();
     session = saveSession(session);
   } catch (e) {
     console.error(e);
-    toast(`Error al exportar ${kind.toUpperCase()}`, true);
+    const detail = e?.message || String(e);
+    toast(`Error al exportar ${kind.toUpperCase()}: ${detail}`, true);
   }
 }
 

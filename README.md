@@ -3,7 +3,33 @@
 Aplicación web (PWA) para capturar incidencias de planta en **Refresco Iberia — planta Alcolea**, montar el informe con la estética de la plantilla corporativa y exportar **PPTX** y **PDF**.
 
 **PRD:** v1.3 (aprobado 2026-09-18)  
+**App:** v1.2.0 — corrección de exportación PPTX/PDF (compartir / guardar)  
 **Cliente:** Jorge Quezada Ortega — Coordinador de Calidad, planta Alcolea (Córdoba)
+
+---
+
+## Actualización v1.2.0 (export / share)
+
+La exportación **PPTX/PDF** en APK y en la web fallaba: el aviso decía que el archivo estaba en Descargas, pero no se guardaba ni se abría el menú de WhatsApp/correo.
+
+**Qué cambia:** Capacitor Filesystem + Share en el APK (escribe el archivo y luego abre compartir); toasts honestos; el service worker ya no intercepta `blob:`/`data:`.
+
+### Web (GitHub Pages) — refrescar caché
+
+Tras el despliegue de v1.2.0:
+
+1. Abrir https://jorgefausto0074-pc.github.io/inspecciones-calidad-alcolea/
+2. **Hard-refresh:** Ctrl+Shift+R (Windows/Linux) o Cmd+Shift+R (Mac).
+3. Si sigue la versión vieja: DevTools → Application → Storage → **Clear site data**, o en el móvil Chrome → icono de candado/info del sitio → **Borrar datos y cookies** de este sitio. Eso actualiza el service worker (`inspecciones-calidad-v2-export`).
+
+### APK Android — reinstalar v1.2.0
+
+**No instale encima del APK anterior.** Desinstale primero:
+
+1. En el teléfono: **Ajustes → Apps → Inspecciones Calidad → Desinstalar**.
+2. Instale el APK **v1.2.0** (`versionCode 2` / `versionName 1.2.0`) desde [`artifacts/inspecciones-calidad-debug.apk`](artifacts/inspecciones-calidad-debug.apk) (tras regenerarlo con `android-wrap`, ver más abajo) o el enlace de Drive si se actualizó.
+3. Conceda Cámara / almacenamiento si el sistema lo pide.
+4. Prueba rápida: informe mínimo → **Compartir / guardar PDF** debe abrir la hoja de compartir del sistema; **Solo descargar** debe mostrar un toast `Guardado: …` con ruta real (Documents o Download).
 
 ---
 
@@ -51,7 +77,7 @@ Hasta que eso ocurra, la URL de arriba devolverá 404. El código, el APK y el w
 4. **Lista:** editar, reordenar dentro del depto., borrar.
 5. **Portada:** título / subtítulo / título de hojas editables (mes-año prellenado).
 6. **Preview:** carrusel 16:9 (2 fotos/hoja; 1 si impar).
-7. **Exportar:** PPTX y/o PDF. La sesión **sigue editable** tras exportar.
+7. **Exportar:** **Compartir / guardar** PPTX o PDF (menú del sistema en APK; selector/descarga en web). **Solo descargar** guarda sin abrir compartir. La sesión **sigue editable** tras exportar. Los avisos no dicen «en Descargas» si el archivo no se llegó a escribir.
 8. Descartar sesión solo con doble confirmación.
 
 No se incluyen datos inventados de planta: solo lo que el usuario captura.
@@ -68,17 +94,19 @@ El APK **debug** precompilado está en el repositorio:
 | ZIP de la web (`dist`) | [`artifacts/inspecciones-calidad-web.zip`](artifacts/inspecciones-calidad-web.zip) |
 
 - **Package ID:** `com.refresco.alcolea.calidad`
+- **Versión:** `1.2.0` (`versionCode 2`) — desinstalar el APK anterior antes de instalar este
 - **Contraseña:** `CalidadAlcolea2026`
-- **Permisos:** `CAMERA`, `READ_MEDIA_IMAGES`, `READ_EXTERNAL_STORAGE` (Android ≤12)
+- **Permisos:** `CAMERA`, `READ_MEDIA_IMAGES`, `READ_EXTERNAL_STORAGE` / `WRITE_EXTERNAL_STORAGE` (Android ≤12)
 - Es un APK **debug** (clave de depuración). Válido para pruebas internas; no para Play Store.
 
-### Instalar (sideload)
+### Instalar (sideload) — v1.2.0
 
-1. Copiar el APK al teléfono (USB, Drive, correo interno, o descargarlo del repo si es público).
-2. En Android: **Ajustes → Seguridad** (o Apps) → permitir **Instalar apps desconocidas**.
-3. Abrir `inspecciones-calidad-debug.apk` e instalar.
-4. Conceder **Cámara** (y fotos/galería si el sistema lo pide).
-5. Introducir `CalidadAlcolea2026`.
+1. **Desinstalar** cualquier «Inspecciones Calidad» previa (Ajustes → Apps → Desinstalar). No actualice encima del debug viejo.
+2. Copiar el APK v1.2.0 al teléfono (USB, Drive, correo interno, o descargarlo del repo si es público).
+3. En Android: **Ajustes → Seguridad** (o Apps) → permitir **Instalar apps desconocidas**.
+4. Abrir `inspecciones-calidad-debug.apk` e instalar.
+5. Conceder **Cámara** (y fotos/galería si el sistema lo pide).
+6. Introducir `CalidadAlcolea2026`.
 
 Enlace de Drive (si se compartió aparte): [inspecciones-calidad-debug.apk](https://drive.google.com/file/d/1ZJtBPcCyE4jtbKrBD81wUYVpYRyaiF1F/view?usp=drivesdk).
 
@@ -94,7 +122,7 @@ npm ci
 npm run build
 ```
 
-Salida: `app/dist/` (lista para GitHub Pages o para servir en local).
+Salida: `app/dist/` (lista para GitHub Pages o para servir en local). El `dist` se versiona como respaldo; Actions lo **vuelve a construir** en cada push a `main`.
 
 Desarrollo / vista previa:
 
@@ -107,7 +135,7 @@ npm run preview
 
 Preview: `http://127.0.0.1:8787/`.
 
-Tras un push a `main`, Actions vuelve a construir y publica Pages. No hace falta commitear `dist/`.
+Tras un push a `main`, Actions vuelve a construir y publica Pages. Compruebe el export PPTX/PDF y, si el SW viejo sigue activo, haga hard-refresh / borre datos del sitio.
 
 ### Cambiar la contraseña
 
@@ -118,18 +146,19 @@ Tras un push a `main`, Actions vuelve a construir y publica Pages. No hace falta
 
 ### Regenerar el APK
 
-Este repositorio incluye el APK listo en `artifacts/`, pero **no** incluye el proyecto Capacitor/Gradle (`android-wrap` / `.tooling`). Para generar un APK nuevo a partir de `app/dist`:
+El wrap Capacitor está en [`android-wrap/`](android-wrap/) (plugins `@capacitor/filesystem` y `@capacitor/share`, `versionName 1.2.0`). Para generar un APK nuevo a partir de `app/dist`:
 
 ```bash
 cd app && npm ci && npm run build
-npm install @capacitor/core @capacitor/cli @capacitor/android
-npx cap init "Inspecciones Calidad" com.refresco.alcolea.calidad --web-dir dist
-npx cap add android
+cd ../android-wrap
+npm ci
 npx cap sync android
 cd android && ./gradlew assembleDebug
+cp app/build/outputs/apk/debug/app-debug.apk \
+  ../../artifacts/inspecciones-calidad-debug.apk
 ```
 
-Copiar el APK resultante a `artifacts/inspecciones-calidad-debug.apk`. Hace falta JDK y Android SDK. El APK de release firmado requiere un keystore propio.
+Hace falta JDK y Android SDK. El APK de release firmado requiere un keystore propio. Recuerde **desinstalar** el APK anterior antes de instalar el nuevo.
 
 ---
 
@@ -156,15 +185,17 @@ Amarillo industrial `#FFC000`, azul Office `#4472C4` / `#1F4E79`, naranja `#ED7D
 ```
 inspecciones-calidad-alcolea/
   PRD.md
+  EXPORT-AUDIT.md               # auditoría del fix de export v1.2.0
   plantilla-inspecciones-calidad.pptx
   README.md
   .github/workflows/pages.yml   # build Vite + GitHub Pages
   samples/informe-ejemplo-alcolea.pptx
   artifacts/inspecciones-calidad-debug.apk
+  android-wrap/                 # Capacitor 8 + Filesystem/Share (APK 1.2.0)
   app/
-    src/           # código fuente
-    public/assets/ # logo y sello de la plantilla
-    dist/          # generado por npm run build (no se versiona)
+    src/           # código fuente (share.js, export PPTX/PDF)
+    public/        # SW v2-export, logo y sello
+    dist/          # npm run build (versionado + rebuild en Actions)
 ```
 
 ---
