@@ -3,10 +3,26 @@
 Aplicación web (PWA) para capturar incidencias de planta en **Refresco Iberia — planta Alcolea**, montar el informe con la estética de la plantilla corporativa y exportar **PPTX** y **PDF**.
 
 **PRD:** v1.3 (aprobado 2026-09-18)  
-**App:** v1.3.1 — Lista ↑↓ reordena fotos dentro del departamento (APK/WebView)  
+**App:** v1.3.2 — acceso con hash PBKDF2; la contraseña de Jorge no cambia y ya no está en el repositorio  
 **Cliente:** Jorge Quezada Ortega — Coordinador de Calidad, planta Alcolea (Córdoba)
 
 ---
+
+## Actualización v1.3.2 (contraseña fuera del repositorio)
+
+El acceso sigue siendo la misma contraseña compartida de Calidad. El repositorio ya no la guarda en claro: `app/src/config.js` tiene solo el algoritmo, las iteraciones, la sal y el hash PBKDF2-SHA256 (600000). Al entrar, la app deriva el hash con WebCrypto y lo compara en tiempo constante. Mientras deriva, el formulario muestra «Comprobando…». La sesión recordada sigue siendo una marca en `sessionStorage`, nunca la contraseña.
+
+- Versión **1.3.2** (`versionCode 5`).
+- Service worker: `inspecciones-calidad-v1-3-2`.
+- El APK sigue siendo **debug**. El repositorio no tiene keystore de release ni workflow de firma. Este APK usa una clave debug nueva, así que no instala encima del anterior: desinstale la app vieja antes.
+
+### Web (GitHub Pages) — refrescar caché
+
+1. Abrir https://jorgefausto0074-pc.github.io/inspecciones-calidad-alcolea/
+2. **Hard-refresh:** Ctrl+Shift+R / Cmd+Shift+R.
+3. Si sigue la versión vieja: DevTools → Application → Storage → **Clear site data**. Service worker: `inspecciones-calidad-v1-3-2`.
+
+La contraseña anterior sigue en el historial de git. No reescriba el historial: quien ya clonó el repo la pudo ver. Rótela cuando el equipo pueda, generando sal y hash nuevos.
 
 ## Actualización v1.3.1 (Lista: reordenar fotos)
 
@@ -73,7 +89,7 @@ El **build ya funciona**. El deploy oficial falla con 404 hasta que el **dueño 
 
 1. Si el plan es **GitHub Free** y el repo sigue **privado**, Pages no sirve el sitio. Elija una opción (se prefiere privado si el plan lo permite):
    - **Pro / Team:** deje el repo privado.
-   - **Free:** **Settings → General → Danger Zone → Change repository visibility → Public**. La app sigue protegida con contraseña `CalidadAlcolea2026`.
+   - **Free:** **Settings → General → Danger Zone → Change repository visibility → Public**. La app sigue protegida con la contraseña compartida de Calidad (ya no está escrita en el repositorio).
 2. **Settings → Pages**:
    - **Source: GitHub Actions**, o
    - **Deploy from a branch** → rama `gh-pages` → carpeta `/ (root)`.
@@ -85,9 +101,9 @@ Hasta que eso ocurra, la URL de arriba devolverá 404. El código, el APK y el w
 
 ## Contraseña de acceso
 
-- **Contraseña:** `CalidadAlcolea2026`
-- La misma contraseña vale para la **web** y para el **APK**.
-- Para cambiarla: edite `password` en [`app/src/config.js`](app/src/config.js) y vuelva a construir (web y, si aplica, APK).
+- La misma contraseña de siempre vale para la **web** y para el **APK**. No está en el repositorio.
+- La comprobación es PBKDF2-SHA256, 600000 iteraciones. En [`app/src/config.js`](app/src/config.js) solo hay `auth.algo`, `auth.iterations`, `auth.salt` y `auth.hash`.
+- La sesión del navegador guarda una marca (`sessionStorage`), no la contraseña.
 
 ---
 
@@ -116,19 +132,19 @@ El APK **debug** precompilado está en el repositorio:
 | ZIP de la web (`dist`) | [`artifacts/inspecciones-calidad-web.zip`](artifacts/inspecciones-calidad-web.zip) |
 
 - **Package ID:** `com.refresco.alcolea.calidad`
-- **Versión:** `1.3.1` (`versionCode 4`) — desinstalar el APK anterior antes de instalar este
-- **Contraseña:** `CalidadAlcolea2026`
+- **Versión:** `1.3.2` (`versionCode 5`) — desinstalar el APK anterior antes de instalar este si la firma no coincide
+- **Contraseña:** la misma de siempre (no está en el repositorio)
 - **Permisos:** `CAMERA`, `READ_MEDIA_IMAGES`, `READ_EXTERNAL_STORAGE` / `WRITE_EXTERNAL_STORAGE` (Android ≤12)
-- Es un APK **debug** (clave de depuración). Válido para pruebas internas; no para Play Store.
+- Es un APK **debug** (clave de depuración nueva; no es la firma del APK anterior). Válido para pruebas internas; no para Play Store. No hay keystore de release en el repo.
 
-### Instalar (sideload) — v1.3.1
+### Instalar (sideload) — v1.3.2
 
-1. **Desinstalar** cualquier «Inspecciones Calidad» previa (Ajustes → Apps → Desinstalar). No actualice encima del debug viejo.
-2. Copiar el APK v1.3.1 al teléfono (USB, Drive, correo interno, o descargarlo del repo si es público).
+1. **Desinstalar** cualquier «Inspecciones Calidad» previa (Ajustes → Apps → Desinstalar) si Android rechaza la actualización por firma distinta.
+2. Copiar el APK v1.3.2 al teléfono (USB, Drive, correo interno, o descargarlo del repo si es público).
 3. En Android: **Ajustes → Seguridad** (o Apps) → permitir **Instalar apps desconocidas**.
 4. Abrir `inspecciones-calidad-debug.apk` e instalar.
 5. Conceder **Cámara** (y fotos/galería si el sistema lo pide).
-6. Introducir `CalidadAlcolea2026`.
+6. Introducir la contraseña de Calidad (la misma que ya usaba el equipo).
 
 Enlace de Drive (si se compartió aparte): [inspecciones-calidad-debug.apk](https://drive.google.com/file/d/1ZJtBPcCyE4jtbKrBD81wUYVpYRyaiF1F/view?usp=drivesdk).
 
@@ -161,14 +177,17 @@ Tras un push a `main`, Actions vuelve a construir y publica Pages. Compruebe el 
 
 ### Cambiar la contraseña
 
-1. Editar `password` en `app/src/config.js`.
-2. `cd app && npm ci && npm run build`.
-3. Commit + push a `main` (Actions actualiza el sitio).
-4. Si también usa el APK, regenérelo (ver abajo) y sustituya `artifacts/inspecciones-calidad-debug.apk`.
+La contraseña no se guarda en el repositorio. `app/src/config.js` tiene `auth.algo`, `auth.iterations`, `auth.salt` y `auth.hash` (PBKDF2-SHA256, 600000 iteraciones, hash de 32 bytes).
+
+1. Genere una sal nueva y el hash PBKDF2-SHA256 (32 bytes) de la contraseña nueva.
+2. Sustituya `salt` y `hash` (base64) en `app/src/config.js`. No deje la contraseña en claro en código, README ni `dist`.
+3. `cd app && npm ci && npm run build`.
+4. Commit + push a `main` (Actions actualiza el sitio).
+5. Si también usa el APK, regenérelo (ver abajo) y sustituya `artifacts/inspecciones-calidad-debug.apk`.
 
 ### Regenerar el APK
 
-El wrap Capacitor está en [`android-wrap/`](android-wrap/) (plugins `@capacitor/filesystem` y `@capacitor/share`, `versionName 1.3.1`). Para generar un APK nuevo a partir de `app/dist`:
+El wrap Capacitor está en [`android-wrap/`](android-wrap/) (plugins `@capacitor/filesystem` y `@capacitor/share`, `versionName 1.3.2`). Para generar un APK nuevo a partir de `app/dist`:
 
 ```bash
 cd app && npm ci && npm run build
@@ -213,7 +232,7 @@ inspecciones-calidad-alcolea/
   .github/workflows/pages.yml   # build Vite + GitHub Pages
   samples/informe-ejemplo-alcolea.pptx
   artifacts/inspecciones-calidad-debug.apk
-  android-wrap/                 # Capacitor 8 + Filesystem/Share (APK 1.3.1)
+  android-wrap/                 # Capacitor 8 + Filesystem/Share (APK 1.3.2)
   app/
     src/           # código fuente (share.js, export PPTX/PDF)
     public/        # SW v2-export, logo y sello
