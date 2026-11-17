@@ -5,10 +5,10 @@ def keystorePropertiesFile = rootProject.file('keystore.properties')
 if (keystorePropertiesFile.exists()) {
     keystorePropertiesFile.withInputStream { keystoreProperties.load(it) }
 }
-def store = keystoreProperties.getProperty('storeFile') ?: System.getenv('INSP_KEYSTORE_FILE')
-def storePassword = keystoreProperties.getProperty('storePassword') ?: System.getenv('INSP_KEYSTORE_PASSWORD')
-def keyAlias = keystoreProperties.getProperty('keyAlias') ?: System.getenv('INSP_KEY_ALIAS')
-def keyPassword = keystoreProperties.getProperty('keyPassword') ?: System.getenv('INSP_KEY_PASSWORD')
+def firmaStoreFile = keystoreProperties.getProperty('storeFile') ?: System.getenv('INSP_KEYSTORE_FILE')
+def firmaStorePassword = keystoreProperties.getProperty('storePassword') ?: System.getenv('INSP_KEYSTORE_PASSWORD')
+def firmaKeyAlias = keystoreProperties.getProperty('keyAlias') ?: System.getenv('INSP_KEY_ALIAS')
+def firmaKeyPassword = keystoreProperties.getProperty('keyPassword') ?: System.getenv('INSP_KEY_PASSWORD')
 
 android {
     namespace = "com.refresco.alcolea.calidad"
@@ -28,11 +28,11 @@ android {
     }
     signingConfigs {
         release {
-            if (store) {
-                storeFile rootProject.file(store)
-                storePassword storePassword
-                keyAlias keyAlias
-                keyPassword keyPassword
+            if (firmaStoreFile) {
+                storeFile rootProject.file(firmaStoreFile)
+                storePassword firmaStorePassword
+                keyAlias firmaKeyAlias
+                keyPassword firmaKeyPassword
             }
         }
     }
@@ -40,7 +40,7 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-            if (store) {
+            if (firmaStoreFile) {
                 signingConfig signingConfigs.release
             }
         }
