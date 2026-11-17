@@ -361,34 +361,37 @@ label { display: block; font-weight: 700; margin: .4rem 0 .2rem; font-size: .9re
   background-repeat: no-repeat; background-position: right -40px bottom -60px; background-size: 260px;
 }
 .slide-16x9 {
-  position: relative; width: 100%; aspect-ratio: 16/9; background: #FAFCFA; color: #2F3E46;
+  position: relative; width: 100%; aspect-ratio: 16/9; background: #F3F7FA; color: #071A40;
   border-radius: 6px; overflow: hidden; box-shadow: var(--shadow);
-  font-family: "Segoe UI", Calibri, system-ui, sans-serif;
+  font-family: "Aktiv Grotesk", Arial, "Helvetica Neue", Helvetica, sans-serif;
 }
+/* Vista previa del informe: misma geometría que PPTX/PDF (LAYOUT de brand.js), imagen Refresco 2026 */
 .slide-16x9 .abs {
   position: absolute;
   box-sizing: border-box;
 }
+.slide-16x9 .slide-bg.navy { background: #071A40; }
 .slide-16x9 .orb {
   border-radius: 50%;
+  background: #083DC4;
   pointer-events: none;
 }
-.slide-16x9 .cenefa {
-  width: 100%;
-  height: 100%;
-  object-fit: fill;
+.slide-16x9 .rule { background: #FF6633; }
+.slide-16x9 .cover-photo,
+.slide-16x9 .section-photo,
+.slide-16x9 .cover-logo,
+.slide-16x9 .footer-logo,
+.slide-16x9 .corner-r {
   display: block;
+  object-fit: fill;
   pointer-events: none;
 }
-.slide-16x9 .mascots {
-  object-fit: contain;
-  object-position: bottom left;
-  z-index: 4;
-  pointer-events: none;
-}
+.slide-16x9 .footer-bar { background: #071A40; z-index: 4; }
+.slide-16x9 .footer-accent { background: #FF6633; z-index: 5; }
+.slide-16x9 .footer-logo { z-index: 5; }
 .slide-16x9 .footer-meta {
   color: #fff;
-  font-weight: 600;
+  font-weight: 700;
   font-size: clamp(7px, 1.15vw, 13px);
   line-height: 1.2;
   z-index: 5;
@@ -398,19 +401,9 @@ label { display: block; font-weight: 700; margin: .4rem 0 .2rem; font-size: .9re
   display: flex;
   align-items: center;
 }
-.slide-16x9 .wordmark {
-  color: #fff;
-  font-weight: 800;
-  font-size: clamp(14px, 2.1vw, 22px);
-  text-align: right;
-  z-index: 5;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-}
 .slide-16x9 .page-num {
-  color: #fff;
-  font-size: clamp(8px, 1.1vw, 12px);
+  color: #FF6633;
+  font-size: clamp(8px, 1.15vw, 13px);
   font-weight: 700;
   z-index: 5;
   display: flex;
@@ -418,42 +411,29 @@ label { display: block; font-weight: 700; margin: .4rem 0 .2rem; font-size: .9re
 }
 
 /* Cover */
-.slide-16x9 .logo-card {
-  background: #fff;
-  border-radius: 14px;
-  box-shadow: 0 8px 22px rgba(47,62,70,.10);
-  display: grid;
-  place-items: center;
-  padding: 2% 3%;
-}
-.slide-16x9 .logo-card img {
-  height: 72%;
-  width: auto;
-  max-width: 90%;
-  object-fit: contain;
-  display: block;
-}
 .slide-16x9 .cover-label {
-  color: #D9871A;
-  font-weight: 800;
+  color: #FF6633;
+  font-weight: 700;
   letter-spacing: .12em;
-  font-size: clamp(8px, 1.2vw, 13px);
+  font-size: clamp(8px, 1.3vw, 14px);
   display: flex;
   align-items: center;
 }
+.slide-16x9 .cover-title::before { content: none; }
 .slide-16x9 .cover-title {
-  color: #03A64B;
-  font-weight: 800;
-  font-size: clamp(18px, 3.15vw, 34px);
+  padding: 0;
+  color: #fff;
+  font-weight: 700;
+  font-size: clamp(18px, 3.5vw, 38px);
   line-height: 1.05;
   letter-spacing: .01em;
   margin: 0;
   text-transform: uppercase;
 }
 .slide-16x9 .cover-sub {
-  color: #2F3E46;
-  font-weight: 800;
-  font-size: clamp(10px, 1.45vw, 16px);
+  color: #B1DCED;
+  font-weight: 700;
+  font-size: clamp(10px, 1.55vw, 17px);
   letter-spacing: .04em;
   margin: 0;
   text-transform: uppercase;
@@ -461,48 +441,47 @@ label { display: block; font-weight: 700; margin: .4rem 0 .2rem; font-size: .9re
 
 /* Section */
 .slide-16x9 .section-kicker {
-  color: #D9871A;
-  font-weight: 800;
+  color: #FF6633;
+  font-weight: 700;
   letter-spacing: .18em;
   font-size: clamp(9px, 1.3vw, 14px);
-  text-align: center;
 }
 .slide-16x9 .section-dept {
-  color: #D9871A;
-  font-weight: 800;
-  font-size: clamp(28px, 5.2vw, 56px);
-  text-align: center;
+  color: #fff;
+  font-weight: 700;
+  font-size: clamp(26px, 4.9vw, 54px);
   line-height: 1;
-  letter-spacing: .02em;
+  letter-spacing: .01em;
+  display: flex;
+  align-items: center;
 }
 .slide-16x9 .section-title {
-  color: #03A64B;
-  font-weight: 800;
-  font-size: clamp(16px, 2.8vw, 30px);
-  text-align: center;
-  letter-spacing: .04em;
+  color: #B1DCED;
+  font-weight: 700;
+  font-size: clamp(14px, 2.4vw, 27px);
+  letter-spacing: .03em;
 }
 
 /* Ficha */
 .slide-16x9 .ficha-dept {
-  color: #D9871A;
-  font-weight: 800;
+  color: #071A40;
+  font-weight: 700;
   font-size: clamp(18px, 2.8vw, 30px);
-  letter-spacing: .02em;
+  letter-spacing: .01em;
   line-height: 1;
 }
 .slide-16x9 .ficha-index {
-  color: #03A64B;
-  font-weight: 800;
+  color: #FF6633;
+  font-weight: 700;
   font-size: clamp(10px, 1.4vw, 15px);
   letter-spacing: .06em;
 }
 .slide-16x9 .ficha-badge {
-  background: #D9871A;
+  background: #071A40;
   color: #fff;
   border-radius: 999px;
-  font-weight: 800;
-  font-size: clamp(8px, 1.05vw, 12px);
+  font-weight: 700;
+  font-size: clamp(8px, 1.1vw, 12px);
   letter-spacing: .04em;
   display: flex;
   align-items: center;
@@ -513,7 +492,7 @@ label { display: block; font-weight: 700; margin: .4rem 0 .2rem; font-size: .9re
 .slide-16x9 .photo-card {
   background: #fff;
   border-radius: 14px;
-  box-shadow: 0 8px 20px rgba(47,62,70,.10);
+  border: 1px solid #E0E0E0;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -521,15 +500,16 @@ label { display: block; font-weight: 700; margin: .4rem 0 .2rem; font-size: .9re
 .slide-16x9 .photo-frame {
   position: relative;
   flex: 1;
-  background: #D5E6DB;
+  background: #E0E0E0;
   min-height: 0;
+  border-bottom: 3px solid #FF6633;
 }
 .slide-16x9 .photo-frame img.photo {
   width: 100%;
   height: 100%;
   object-fit: contain;
   display: block;
-  background: #D5E6DB;
+  background: #E0E0E0;
 }
 .slide-16x9 .status-stamp {
   position: absolute;
@@ -537,31 +517,30 @@ label { display: block; font-weight: 700; margin: .4rem 0 .2rem; font-size: .9re
   right: 3%;
   z-index: 5;
   border-radius: 999px;
-  font-weight: 800;
-  font-size: clamp(7px, 1.0vw, 11px);
+  font-weight: 700;
+  font-size: clamp(7px, 1.05vw, 12px);
   letter-spacing: .04em;
   padding: 2px 8px;
   color: #fff;
   pointer-events: none;
-  box-shadow: 0 1px 3px rgba(0,0,0,.18);
 }
-.slide-16x9 .status-stamp.pending { background: #ED7D31; }
-.slide-16x9 .status-stamp.resolved { background: #03A64B; }
+.slide-16x9 .status-stamp.pending { background: #FF6633; }
+.slide-16x9 .status-stamp.resolved { background: #083DC4; }
 .slide-16x9 .photo-caption {
   padding: 3% 4% 4%;
   background: #fff;
 }
 .slide-16x9 .loc-code {
-  color: #D9871A;
-  font-weight: 800;
-  font-size: clamp(8px, 1.15vw, 12px);
+  color: #FF6633;
+  font-weight: 700;
+  font-size: clamp(8px, 1.25vw, 13px);
   letter-spacing: .04em;
   margin-bottom: 2px;
 }
 .slide-16x9 .cap-title {
-  color: #2F3E46;
-  font-weight: 800;
-  font-size: clamp(9px, 1.25vw, 13px);
+  color: #071A40;
+  font-weight: 700;
+  font-size: clamp(9px, 1.35vw, 14px);
   line-height: 1.2;
   text-transform: uppercase;
 }
@@ -582,7 +561,6 @@ label { display: block; font-weight: 700; margin: .4rem 0 .2rem; font-size: .9re
   box-shadow: 0 1px 3px rgba(0,0,0,.25);
   touch-action: manipulation;
 }
-
 
 .source-btns label.pick {
   display: inline-flex; align-items: center; justify-content: center;

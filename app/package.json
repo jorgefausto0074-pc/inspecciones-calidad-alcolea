@@ -1,7 +1,7 @@
 {
   "name": "inspecciones-calidad-alcolea",
   "private": true,
-  "version": "1.4.0",
+  "version": "1.5.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -20,6 +20,7 @@
     "@capacitor/share": "^8.0.1",
     "html2canvas": "^1.4.1",
     "jspdf": "^4.2.1",
+    "jszip": "^3.10.2",
     "pptxgenjs": "^4.0.1"
   }
 }

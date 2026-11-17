@@ -1,8 +1,9 @@
 import { jsPDF } from 'jspdf';
 import {
   COLORS, COPY, LAYOUT, SLIDE, cardSlots, photoArea, captionArea,
-  logoWidthForHeight, mmBox, IN_TO_MM,
+  logoWidthForHeight, rWidthForHeight, sectionPhotoFor, mmBox, IN_TO_MM,
 } from './brand.js';
+import { DEPT_ORDER } from './config.js';
 import { buildPreviewSlides, locationLabel, commentTitle, statusLabel } from './slides.js';
 import { loadBrandAssets, containRect, dataUrlDimensions } from './assets-load.js';
 
@@ -25,97 +26,104 @@ function safeFileName(session) {
 
 function fillOval(pdf, boxIn, hex) {
   const b = mmBox(boxIn);
-  const [r, g, bl] = hexRgb(hex);
-  pdf.setFillColor(r, g, bl);
+  pdf.setFillColor(...hexRgb(hex));
   pdf.ellipse(b.x + b.w / 2, b.y + b.h / 2, b.w / 2, b.h / 2, 'F');
 }
 
+function fillRect(pdf, boxIn, hex) {
+  const b = mmBox(boxIn);
+  pdf.setFillColor(...hexRgb(hex));
+  pdf.rect(b.x, b.y, b.w, b.h, 'F');
+}
+
+function roundedRect(pdf, boxIn, hex, radiusMm = 3) {
+  const b = mmBox(boxIn);
+  pdf.setFillColor(...hexRgb(hex));
+  pdf.roundedRect(b.x, b.y, b.w, b.h, radiusMm, radiusMm, 'F');
+}
+
+function imgFmt(dataUrl) {
+  return String(dataUrl).startsWith('data:image/jpeg') ? 'JPEG' : 'PNG';
+}
+
+function addImageIn(pdf, dataUrl, x, y, w, h) {
+  pdf.addImage(dataUrl, imgFmt(dataUrl), x * IN_TO_MM, y * IN_TO_MM, w * IN_TO_MM, h * IN_TO_MM);
+}
+
+function background(pdf, hex) {
+  pdf.setFillColor(...hexRgb(hex));
+  pdf.rect(0, 0, W, H, 'F');
+}
+
+/** Pie navy con filete naranja, nº de página, texto del pie y logo Refresco naranja. */
 function addChrome(pdf, assets, pageNum) {
   const L = LAYOUT;
-  if (assets.cenefa) {
-    const b = mmBox(L.cenefa);
-    pdf.addImage(assets.cenefa, 'PNG', b.x, b.y, b.w, b.h);
-  } else {
-    const [r, g, bl] = hexRgb(COLORS.green);
-    pdf.setFillColor(r, g, bl);
-    pdf.rect(0, H - 14, W, 14, 'F');
-  }
-  if (assets.mascots) {
-    const b = mmBox(L.mascots);
-    pdf.addImage(assets.mascots, 'PNG', b.x, b.y, b.w, b.h);
-  }
+  fillRect(pdf, L.footerBar, COLORS.navy);
+  fillRect(pdf, L.footerAccent, COLORS.orange);
   pdf.setTextColor(255, 255, 255);
   pdf.setFont('helvetica', 'bold');
   const meta = mmBox(L.footerMeta);
   pdf.setFontSize(10);
   pdf.text(COPY.footerMeta, meta.x, meta.y + meta.h * 0.72);
-  const wm = mmBox(L.wordmark);
-  pdf.setFontSize(16);
-  pdf.text(COPY.wordmark, wm.x + wm.w, wm.y + wm.h * 0.72, { align: 'right' });
+  if (assets.logo) {
+    const h = L.footerLogo.h;
+    addImageIn(pdf, assets.logo, L.footerLogo.x, L.footerLogo.y, logoWidthForHeight(h), h);
+  }
   if (pageNum) {
     const pn = mmBox(L.pageNum);
-    pdf.setFontSize(9);
-    pdf.text(String(pageNum), pn.x, pn.y + pn.h * 0.75);
+    pdf.setTextColor(...hexRgb(COLORS.orange));
+    pdf.setFontSize(10);
+    pdf.text(String(pageNum), pn.x, pn.y + pn.h * 0.72);
   }
   pdf.setTextColor(0, 0, 0);
 }
 
-function roundedRect(pdf, boxIn, hex, radiusMm = 3) {
-  const b = mmBox(boxIn);
-  const [r, g, bl] = hexRgb(hex);
-  pdf.setFillColor(r, g, bl);
-  pdf.roundedRect(b.x, b.y, b.w, b.h, radiusMm, radiusMm, 'F');
-}
-
 function addCover(pdf, assets, model) {
   const L = LAYOUT;
-  pdf.setFillColor(...hexRgb(COLORS.bg));
-  pdf.rect(0, 0, W, H, 'F');
-  fillOval(pdf, L.coverOrbGreen, COLORS.green);
-  fillOval(pdf, L.coverOrbOrange, '#E8922A');
-  fillOval(pdf, L.coverOrbWhite, '#F3FBF6');
-  roundedRect(pdf, L.coverLogoCard, COLORS.white, 4);
+  background(pdf, COLORS.navy);
+  if (assets.cover) addImageIn(pdf, assets.cover, L.coverPhoto.x, L.coverPhoto.y, L.coverPhoto.w, L.coverPhoto.h);
+  L.coverCircles.forEach((c) => fillOval(pdf, c, COLORS.bright));
   if (assets.logo) {
-    const logoH = L.coverLogo.h;
-    const logoW = logoWidthForHeight(logoH);
-    const logoX = L.coverLogoCard.x + (L.coverLogoCard.w - logoW) / 2;
-    const logoY = L.coverLogoCard.y + (L.coverLogoCard.h - logoH) / 2;
-    pdf.addImage(assets.logo, 'PNG', logoX * IN_TO_MM, logoY * IN_TO_MM, logoW * IN_TO_MM, logoH * IN_TO_MM);
+    const h = L.coverLogo.h;
+    addImageIn(pdf, assets.logo, L.coverLogo.x, L.coverLogo.y, logoWidthForHeight(h), h);
   }
+  fillRect(pdf, L.coverRule, COLORS.orange);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(...hexRgb(COLORS.orange));
   const lab = mmBox(L.coverLabel);
-  pdf.setFontSize(11);
-  pdf.text(model.label || COPY.coverLabel, lab.x, lab.y + lab.h * 0.75);
-  pdf.setTextColor(...hexRgb(COLORS.green));
-  const title = mmBox(L.coverTitle);
-  pdf.setFontSize(28);
-  pdf.text((model.title || '').toUpperCase(), title.x, title.y + 10, { maxWidth: title.w });
-  pdf.setTextColor(...hexRgb(COLORS.charcoal));
-  const sub = mmBox(L.coverSubtitle);
   pdf.setFontSize(12);
+  pdf.text(model.label || COPY.coverLabel, lab.x, lab.y + lab.h * 0.75, { charSpace: 0.6 });
+  pdf.setTextColor(255, 255, 255);
+  const title = mmBox(L.coverTitle);
+  pdf.setFontSize(32);
+  pdf.text((model.title || '').toUpperCase(), title.x, title.y + 11, { maxWidth: title.w });
+  pdf.setTextColor(...hexRgb(COLORS.lightblue));
+  const sub = mmBox(L.coverSubtitle);
+  pdf.setFontSize(14);
   pdf.text((model.subtitle || '').toUpperCase(), sub.x, sub.y + sub.h * 0.7);
   addChrome(pdf, assets, null);
 }
 
 function addSection(pdf, assets, model, pageNum) {
   const L = LAYOUT;
-  pdf.setFillColor(...hexRgb(COLORS.bg));
-  pdf.rect(0, 0, W, H, 'F');
-  fillOval(pdf, L.sectionOrbLeft, '#F0E4D0');
-  fillOval(pdf, L.sectionOrbRight, '#D8F3E3');
+  background(pdf, COLORS.navy);
+  const photo = assets.sections?.[sectionPhotoFor(model.code, DEPT_ORDER)];
+  if (photo) addImageIn(pdf, photo, L.sectionPhoto.x, L.sectionPhoto.y, L.sectionPhoto.w, L.sectionPhoto.h);
+  L.sectionCircles.forEach((c) => fillOval(pdf, c, COLORS.bright));
+  fillRect(pdf, L.sectionRule, COLORS.orange);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(...hexRgb(COLORS.orange));
   const k = mmBox(L.sectionKicker);
   pdf.setFontSize(12);
-  pdf.text(COPY.departamento, W / 2, k.y + k.h * 0.75, { align: 'center' });
+  pdf.text(COPY.departamento, k.x, k.y + k.h * 0.75, { charSpace: 0.8 });
+  pdf.setTextColor(255, 255, 255);
   const d = mmBox(L.sectionDept);
-  pdf.setFontSize(40);
-  pdf.text((model.deptName || '').toUpperCase(), W / 2, d.y + d.h * 0.72, { align: 'center' });
-  pdf.setTextColor(...hexRgb(COLORS.green));
+  pdf.setFontSize(42);
+  pdf.text((model.deptName || '').toUpperCase(), d.x, d.y + d.h * 0.72);
+  pdf.setTextColor(...hexRgb(COLORS.lightblue));
   const t = mmBox(L.sectionTitle);
-  pdf.setFontSize(22);
-  pdf.text((model.title || '').toUpperCase(), W / 2, t.y + t.h * 0.7, { align: 'center' });
+  pdf.setFontSize(21);
+  pdf.text((model.title || '').toUpperCase(), t.x, t.y + t.h * 0.7);
   addChrome(pdf, assets, pageNum);
 }
 
@@ -126,30 +134,32 @@ function addStamp(pdf, photoBoxIn, photo) {
   const x = b.x + b.w - w - 2.5;
   const y = b.y + 2.5;
   const resolved = photo.status === 'resolved';
-  pdf.setFillColor(...hexRgb(resolved ? COLORS.green : COLORS.orangeAlt));
+  pdf.setFillColor(...hexRgb(resolved ? COLORS.bright : COLORS.orange));
   pdf.roundedRect(x, y, w, h, 2, 2, 'F');
   pdf.setTextColor(255, 255, 255);
   pdf.setFont('helvetica', 'bold');
-  pdf.setFontSize(7);
+  pdf.setFontSize(8);
   pdf.text(statusLabel(photo), x + w / 2, y + h * 0.68, { align: 'center' });
   pdf.setTextColor(0, 0, 0);
 }
 
 function addFicha(pdf, assets, model, pageNum) {
   const L = LAYOUT;
-  pdf.setFillColor(...hexRgb(COLORS.bg));
-  pdf.rect(0, 0, W, H, 'F');
-  fillOval(pdf, L.fichaOrb, '#D8F3E3');
+  background(pdf, COLORS.bg);
+  if (assets.rLogo) {
+    const h = L.cornerR.h;
+    addImageIn(pdf, assets.rLogo, L.cornerR.x, L.cornerR.y, rWidthForHeight(h), h);
+  }
   pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(...hexRgb(COLORS.orange));
+  pdf.setTextColor(...hexRgb(COLORS.navy));
   const dn = mmBox(L.fichaDept);
   pdf.setFontSize(20);
   pdf.text((model.deptName || '').toUpperCase(), dn.x, dn.y + dn.h * 0.8);
-  pdf.setTextColor(...hexRgb(COLORS.green));
+  pdf.setTextColor(...hexRgb(COLORS.orange));
   const fi = mmBox(L.fichaIndex);
   pdf.setFontSize(11);
   pdf.text(`FICHA ${model.fichaIndex} DE ${model.fichaTotal}`, fi.x, fi.y + fi.h * 0.8);
-  roundedRect(pdf, L.fichaBadge, COLORS.orange, 3);
+  roundedRect(pdf, L.fichaBadge, COLORS.navy, 3);
   pdf.setTextColor(255, 255, 255);
   const bd = mmBox(L.fichaBadge);
   pdf.setFontSize(8);
@@ -158,31 +168,33 @@ function addFicha(pdf, assets, model, pageNum) {
   const slots = cardSlots(model.photos.length);
   model.photos.forEach((photo, idx) => {
     const card = slots[idx];
-    roundedRect(pdf, card, COLORS.white, 3);
+    const cMm = mmBox(card);
+    pdf.setDrawColor(...hexRgb(COLORS.lightgrey));
+    pdf.setLineWidth(0.3);
+    pdf.setFillColor(255, 255, 255);
+    pdf.roundedRect(cMm.x, cMm.y, cMm.w, cMm.h, 3, 3, 'FD');
     const ph = photoArea(card);
-    const phMm = mmBox(ph);
-    pdf.setFillColor(...hexRgb('#D5E6DB'));
-    pdf.rect(phMm.x, phMm.y, phMm.w, phMm.h, 'F');
+    fillRect(pdf, ph, COLORS.lightgrey);
     if (photo.dataUrl) {
       try {
         const dim = dataUrlDimensions(photo.dataUrl);
         const fitIn = dim ? containRect(dim.w, dim.h, ph) : ph;
         const fit = mmBox(fitIn);
-        const fmt = String(photo.dataUrl).startsWith('data:image/jpeg') ? 'JPEG' : 'PNG';
-        pdf.addImage(photo.dataUrl, fmt, fit.x, fit.y, fit.w, fit.h);
+        pdf.addImage(photo.dataUrl, imgFmt(photo.dataUrl), fit.x, fit.y, fit.w, fit.h);
       } catch {
         /* keep placeholder */
       }
     }
     addStamp(pdf, ph, photo);
+    fillRect(pdf, { x: card.x, y: ph.y + ph.h, w: card.w, h: 0.04 }, COLORS.orange);
     const cap = captionArea(card);
     const capMm = mmBox(cap);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(...hexRgb(COLORS.orange));
-    pdf.setFontSize(9);
-    pdf.text(locationLabel(photo), capMm.x, capMm.y + 4, { maxWidth: capMm.w });
-    pdf.setTextColor(...hexRgb(COLORS.charcoal));
     pdf.setFontSize(10);
+    pdf.text(locationLabel(photo), capMm.x, capMm.y + 4, { maxWidth: capMm.w });
+    pdf.setTextColor(...hexRgb(COLORS.navy));
+    pdf.setFontSize(11);
     pdf.text(commentTitle(photo), capMm.x, capMm.y + 10, { maxWidth: capMm.w });
   });
 
@@ -190,7 +202,7 @@ function addFicha(pdf, assets, model, pageNum) {
 }
 
 /**
- * PDF 16:9 v3. Devuelve { blob, fileName } (no escribe a disco).
+ * PDF 16:9 con la imagen Refresco 2026. Devuelve { blob, fileName } (no escribe a disco).
  */
 export async function exportPdf(session, { assets } = {}) {
   const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: [W, H], compress: true });

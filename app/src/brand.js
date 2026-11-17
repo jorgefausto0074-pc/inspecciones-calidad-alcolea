@@ -1,46 +1,47 @@
-/** Visual brand tokens — Refresco Iberia Alcolea, diseño v3 (APPROVED). */
+/** Visual brand tokens — informes Refresco 2026 (v1.5.0). Paleta oficial Styleguide 1.6 / BrandIdentity 2.0. */
 
-export const APP_VERSION = '1.4.0';
+export const APP_VERSION = '1.5.0';
 
 export const COLORS = {
-  green: '#03A64B',
-  greenHex: '03A64B',
-  orange: '#D9871A',
-  orangeHex: 'D9871A',
-  orangeAlt: '#ED7D31',
-  orangeAltHex: 'ED7D31',
-  charcoal: '#2F3E46',
-  charcoalHex: '2F3E46',
-  muted: '#6E7F88',
-  mutedHex: '6E7F88',
-  bg: '#FAFCFA',
-  bgHex: 'FAFCFA',
+  navy: '#071A40',
+  navyHex: '071A40',
+  orange: '#FF6633',
+  orangeHex: 'FF6633',
+  bright: '#083DC4',
+  brightHex: '083DC4',
+  lightblue: '#B1DCED',
+  lightblueHex: 'B1DCED',
+  highlight: '#CCF5FF',
+  highlightHex: 'CCF5FF',
+  lightgrey: '#E0E0E0',
+  lightgreyHex: 'E0E0E0',
+  slate: '#496380',
+  slateHex: '496380',
+  bg: '#F3F7FA',
+  bgHex: 'F3F7FA',
   white: '#FFFFFF',
   whiteHex: 'FFFFFF',
-  orbGreen: '#03A64B',
-  orbOrange: '#E8922A',
-  orbMint: '#D8F3E3',
-  orbCream: '#F0E4D0',
-  orbWhite: '#F3FBF6',
-  photoBg: '#D5E6DB',
-  cardBorder: '#E4EEE7',
 };
+
+export const FONT = 'Arial';
 
 export const COPY = {
   footerMeta: 'Inspecciones calidad · Refresco Iberia · Planta Alcolea',
   coverLabel: 'CALIDAD · PLANTA ALCOLEA',
-  wordmark: 'Refresco',
   departamento: 'DEPARTAMENTO',
 };
 
+/** Imágenes del informe (PNG/JPG; kit oficial de marca 2026 y Refresco_Template.pptx). */
 export const ASSETS = {
-  logo: './assets/logo-refresco.png',
-  cenefa: './assets/cenefa-ondulada.png',
-  mascots: './assets/logo-mascotas.png',
+  logo: './assets/informe2026/logo-refresco-naranja.png',
+  rLogo: './assets/informe2026/r-naranja.png',
+  cover: './assets/informe2026/portada-botellas.jpg',
+  sections: [1, 2, 3, 4, 5, 6, 7].map((n) => `./assets/informe2026/seccion-${n}.jpg`),
 };
 
-/** Native logo pixel size (clean wordmark). Used to keep object-fit contain. */
-export const LOGO_NATIVE = { w: 1192, h: 719 };
+/** Tamaño nativo (px) de los logos recortados, para mantener la proporción. */
+export const LOGO_NATIVE = { w: 1808, h: 300 };
+export const R_NATIVE = { w: 730, h: 593 };
 
 export const SLIDE = { w: 13.333, h: 7.5 };
 
@@ -49,39 +50,57 @@ export const SLIDE = { w: 13.333, h: 7.5 };
  * CSS preview converts via pct() so HTML/PPTX/PDF share the same geometry.
  */
 export const LAYOUT = {
-  cenefa: { x: 0, y: 5.833, w: 13.333, h: 1.667 },
-  mascots: { x: 0.28, y: 6.12, w: 1.12, h: 1.32 },
-  footerMeta: { x: 1.52, y: 7.08, w: 8.3, h: 0.28 },
-  wordmark: { x: 10.15, y: 6.96, w: 2.9, h: 0.42 },
-  pageNum: { x: 0.06, y: 7.10, w: 0.22, h: 0.22 },
+  footerBar: { x: 0, y: 7.0, w: 13.333, h: 0.5 },
+  footerAccent: { x: 0, y: 6.97, w: 13.333, h: 0.035 },
+  pageNum: { x: 0.18, y: 7.1, w: 0.4, h: 0.3 },
+  footerMeta: { x: 0.62, y: 7.1, w: 8.5, h: 0.3 },
+  footerLogo: { x: 11.42, y: 7.13, h: 0.24 },
+  cornerR: { x: 12.42, y: 0.22, h: 0.5 },
 
-  coverLogoCard: { x: 0.78, y: 1.05, w: 2.55, h: 1.62 },
-  coverLogo: { x: 0.98, y: 1.22, h: 0.92 },
-  coverLabel: { x: 0.78, y: 2.82, w: 7.4, h: 0.28 },
-  coverTitle: { x: 0.78, y: 3.08, w: 6.55, h: 1.45 },
-  coverSubtitle: { x: 0.78, y: 4.52, w: 8.2, h: 0.38 },
-  coverOrbGreen: { x: 10.55, y: 0.05, w: 3.55, h: 3.55 },
-  coverOrbOrange: { x: 10.05, y: 2.42, w: 1.95, h: 1.95 },
-  coverOrbWhite: { x: 12.05, y: 3.42, w: 1.38, h: 1.38 },
+  coverPhoto: { x: 7.733, y: 0, w: 5.6, h: 6.97 },
+  coverLogo: { x: 0.8, y: 0.8, h: 0.5 },
+  coverRule: { x: 0.8, y: 2.38, w: 0.9, h: 0.06 },
+  coverLabel: { x: 0.8, y: 2.55, w: 6.6, h: 0.3 },
+  coverTitle: { x: 0.8, y: 2.92, w: 6.6, h: 1.85 },
+  coverSubtitle: { x: 0.8, y: 4.85, w: 6.6, h: 0.45 },
+  coverCircles: [
+    { x: 6.95, y: 5.15, w: 1.35, h: 1.35 },
+    { x: 6.5, y: 4.82, w: 0.5, h: 0.5 },
+    { x: 8.15, y: 4.62, w: 0.34, h: 0.34 },
+  ],
 
-  sectionKicker: { x: 0.8, y: 2.28, w: 11.73, h: 0.32 },
-  sectionDept: { x: 0.8, y: 2.58, w: 11.73, h: 0.85 },
-  sectionTitle: { x: 0.8, y: 3.48, w: 11.73, h: 0.7 },
-  sectionOrbLeft: { x: -0.85, y: 2.05, w: 2.35, h: 2.35 },
-  sectionOrbRight: { x: 11.55, y: -0.35, w: 2.85, h: 2.85 },
+  sectionPhoto: { x: 8.35, y: 1.2, w: 4.4, h: 4.4 },
+  sectionCircles: [
+    { x: 7.75, y: 4.55, w: 1.3, h: 1.3 },
+    { x: 7.5, y: 4.2, w: 0.38, h: 0.38 },
+    { x: 12.25, y: 0.7, w: 0.6, h: 0.6 },
+  ],
+  sectionRule: { x: 0.8, y: 2.12, w: 0.9, h: 0.06 },
+  sectionKicker: { x: 0.8, y: 2.28, w: 7.0, h: 0.32 },
+  sectionDept: { x: 0.8, y: 2.62, w: 7.3, h: 1.0 },
+  sectionTitle: { x: 0.8, y: 3.68, w: 7.3, h: 0.6 },
 
-  fichaDept: { x: 0.42, y: 0.18, w: 7.5, h: 0.42 },
-  fichaIndex: { x: 0.42, y: 0.58, w: 5.5, h: 0.28 },
-  fichaBadge: { x: 10.15, y: 0.26, w: 2.75, h: 0.36 },
-  fichaOrb: { x: 12.35, y: 0.55, w: 1.55, h: 1.55 },
+  fichaDept: { x: 0.42, y: 0.2, w: 7.5, h: 0.42 },
+  fichaIndex: { x: 0.42, y: 0.6, w: 5.5, h: 0.28 },
+  fichaBadge: { x: 9.4, y: 0.29, w: 2.75, h: 0.36 },
   cardGap: 0.28,
-  cards: { x: 0.38, y: 0.98, w: 12.57, h: 4.95 },
+  cards: { x: 0.38, y: 1.0, w: 12.57, h: 5.72 },
   cardCaptionH: 0.95,
   stamp: { w: 1.22, h: 0.28 },
 };
 
+/** Foto de sección según el departamento (fija por código, sin azar). */
+export function sectionPhotoFor(code, deptOrder = []) {
+  const i = Math.max(0, deptOrder.indexOf(code));
+  return i % ASSETS.sections.length;
+}
+
 export function logoWidthForHeight(heightIn) {
   return heightIn * (LOGO_NATIVE.w / LOGO_NATIVE.h);
+}
+
+export function rWidthForHeight(heightIn) {
+  return heightIn * (R_NATIVE.w / R_NATIVE.h);
 }
 
 export function pctBox({ x, y, w, h }) {

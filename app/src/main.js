@@ -9,7 +9,10 @@ import {
 import { exportPptx } from './export-pptx.js';
 import { exportPdf } from './export-pdf.js';
 import { buildPreviewSlides, locationLabel, commentTitle, statusLabel } from './slides.js';
-import { ASSETS, LAYOUT, boxStyle, cardSlots, APP_VERSION, COPY } from './brand.js';
+import {
+  ASSETS, LAYOUT, boxStyle, cardSlots, APP_VERSION, COPY,
+  logoWidthForHeight, rWidthForHeight, sectionPhotoFor,
+} from './brand.js';
 import { shareOrDownload, downloadOnly } from './share.js';
 import { UI, TAGLINE, gateDecorHTML, ribbonHTML } from './ui-brand.js';
 
@@ -335,35 +338,41 @@ function slideChromeHTML(pageNum) {
   const page = pageNum
     ? `<div class="abs page-num" style="${boxStyle(L.pageNum)}">${pageNum}</div>`
     : '';
+  const logoBox = { ...L.footerLogo, w: logoWidthForHeight(L.footerLogo.h) };
   return `
-    <div class="abs" style="${boxStyle(L.cenefa)}">
-      <img class="cenefa" src="${ASSETS.cenefa}" alt="" />
-    </div>
-    <img class="abs mascots" src="${ASSETS.mascots}" alt="" style="${boxStyle(L.mascots)}" />
+    <div class="abs footer-bar" style="${boxStyle(L.footerBar)}"></div>
+    <div class="abs footer-accent" style="${boxStyle(L.footerAccent)}"></div>
     <div class="abs footer-meta" style="${boxStyle(L.footerMeta)}">${escapeAttr(COPY.footerMeta)}</div>
-    <div class="abs wordmark" style="${boxStyle(L.wordmark)}">${escapeAttr(COPY.wordmark)}</div>
+    <img class="abs footer-logo" src="${ASSETS.logo}" alt="Refresco" style="${boxStyle(logoBox)}" />
     ${page}`;
+}
+
+function circlesHTML(list) {
+  return list.map((c) => `<div class="abs orb" style="${boxStyle(c)}"></div>`).join('');
 }
 
 function renderSlideV3(s, pageNum) {
   const L = LAYOUT;
   if (s.type === 'cover') {
+    const logoBox = { ...L.coverLogo, w: logoWidthForHeight(L.coverLogo.h) };
     return `
-      <div class="abs orb" style="${boxStyle(L.coverOrbGreen)}background:${'#03A64B'}"></div>
-      <div class="abs orb" style="${boxStyle(L.coverOrbOrange)}background:${'#E8922A'}"></div>
-      <div class="abs orb" style="${boxStyle(L.coverOrbWhite)}background:${'#F3FBF6'};box-shadow:0 0 0 1px rgba(3,166,75,.08)"></div>
-      <div class="abs logo-card" style="${boxStyle(L.coverLogoCard)}">
-        <img src="${ASSETS.logo}" alt="Refresco" />
-      </div>
+      <div class="abs slide-bg navy" style="left:0;top:0;width:100%;height:100%"></div>
+      <img class="abs cover-photo" src="${ASSETS.cover}" alt="" style="${boxStyle(L.coverPhoto)}" />
+      ${circlesHTML(L.coverCircles)}
+      <img class="abs cover-logo" src="${ASSETS.logo}" alt="Refresco" style="${boxStyle(logoBox)}" />
+      <div class="abs rule" style="${boxStyle(L.coverRule)}"></div>
       <div class="abs cover-label" style="${boxStyle(L.coverLabel)}">${escapeAttr(s.label || COPY.coverLabel)}</div>
       <h2 class="abs cover-title" style="${boxStyle(L.coverTitle)}">${escapeAttr(s.title)}</h2>
       <p class="abs cover-sub" style="${boxStyle(L.coverSubtitle)}">${escapeAttr(s.subtitle)}</p>
       ${slideChromeHTML(null)}`;
   }
   if (s.type === 'section') {
+    const photo = ASSETS.sections[sectionPhotoFor(s.code, DEPT_ORDER)];
     return `
-      <div class="abs orb" style="${boxStyle(L.sectionOrbLeft)}background:#F0E4D0"></div>
-      <div class="abs orb" style="${boxStyle(L.sectionOrbRight)}background:#D8F3E3"></div>
+      <div class="abs slide-bg navy" style="left:0;top:0;width:100%;height:100%"></div>
+      <img class="abs section-photo" src="${photo}" alt="" style="${boxStyle(L.sectionPhoto)}" />
+      ${circlesHTML(L.sectionCircles)}
+      <div class="abs rule" style="${boxStyle(L.sectionRule)}"></div>
       <div class="abs section-kicker" style="${boxStyle(L.sectionKicker)}">${escapeAttr(COPY.departamento)}</div>
       <div class="abs section-dept" style="${boxStyle(L.sectionDept)}">${escapeAttr(s.deptName)}</div>
       <div class="abs section-title" style="${boxStyle(L.sectionTitle)}">${escapeAttr(s.title)}</div>
@@ -390,7 +399,7 @@ function renderSlideV3(s, pageNum) {
     </div>`;
   }).join('');
   return `
-    <div class="abs orb" style="${boxStyle(L.fichaOrb)}background:#D8F3E3"></div>
+    <img class="abs corner-r" src="${ASSETS.rLogo}" alt="" style="${boxStyle({ ...L.cornerR, w: rWidthForHeight(L.cornerR.h) })}" />
     <div class="abs ficha-dept" style="${boxStyle(L.fichaDept)}">${escapeAttr(s.deptName)}</div>
     <div class="abs ficha-index" style="${boxStyle(L.fichaIndex)}">FICHA ${s.fichaIndex} DE ${s.fichaTotal}</div>
     <div class="abs ficha-badge" style="${boxStyle(L.fichaBadge)}">${escapeAttr(s.deptSection)}</div>

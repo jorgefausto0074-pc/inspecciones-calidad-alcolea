@@ -33,12 +33,13 @@ export async function loadAsDataUrl(path) {
 }
 
 export async function loadBrandAssets() {
-  const [logo, cenefa, mascots] = await Promise.all([
+  const [logo, rLogo, cover, ...sections] = await Promise.all([
     loadAsDataUrl(ASSETS.logo),
-    loadAsDataUrl(ASSETS.cenefa),
-    loadAsDataUrl(ASSETS.mascots),
+    loadAsDataUrl(ASSETS.rLogo),
+    loadAsDataUrl(ASSETS.cover),
+    ...ASSETS.sections.map((p) => loadAsDataUrl(p)),
   ]);
-  return { logo, cenefa, mascots };
+  return { logo, rLogo, cover, sections };
 }
 
 export function dataUrlDimensions(dataUrl) {
