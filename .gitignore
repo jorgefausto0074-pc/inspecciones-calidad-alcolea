@@ -7,3 +7,8 @@ node_modules/
 android-wrap/android/.gradle/
 android-wrap/android/app/build/
 android-wrap/android/build/
+
+# Firma Android: nunca al repo
+android-wrap/android/keystore.properties
+*.keystore
+*.jks

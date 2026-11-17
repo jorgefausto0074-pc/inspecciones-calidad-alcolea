@@ -154,6 +154,7 @@ function renderGate() {
     input.disabled = true;
     btn.disabled = true;
     btn.textContent = 'Comprobando…';
+    status.classList.remove('err');
     status.textContent = 'Comprobando…';
     let ok = false;
     try {
@@ -176,7 +177,8 @@ function renderGate() {
     input.disabled = false;
     btn.disabled = false;
     btn.textContent = 'Entrar';
-    status.textContent = '';
+    status.textContent = 'Contraseña incorrecta';
+    status.classList.add('err');
     input.focus();
   });
 }

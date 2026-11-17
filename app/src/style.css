@@ -96,6 +96,7 @@ button:active { transform: translateY(1px); }
 }
 .gate input { width: 100%; margin: .5rem 0 1rem; text-align: center; font-size: 1.1rem; }
 .gate .hint { color: var(--muted); font-size: .85rem; }
+.gate .hint.err { color: var(--red); font-weight: 700; }
 
 .tabs { display: flex; gap: .4rem; flex-wrap: wrap; margin-bottom: 1rem; }
 .tabs button {
