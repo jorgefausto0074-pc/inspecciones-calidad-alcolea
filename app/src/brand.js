@@ -1,6 +1,6 @@
 /** Visual brand tokens — Refresco Iberia Alcolea, diseño v3 (APPROVED). */
 
-export const APP_VERSION = '1.3.3';
+export const APP_VERSION = '1.4.0';
 
 export const COLORS = {
   green: '#03A64B',

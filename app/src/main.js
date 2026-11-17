@@ -11,6 +11,7 @@ import { exportPdf } from './export-pdf.js';
 import { buildPreviewSlides, locationLabel, commentTitle, statusLabel } from './slides.js';
 import { ASSETS, LAYOUT, boxStyle, cardSlots, APP_VERSION, COPY } from './brand.js';
 import { shareOrDownload, downloadOnly } from './share.js';
+import { UI, TAGLINE, gateDecorHTML, ribbonHTML } from './ui-brand.js';
 
 let session = loadSession();
 let tab = 'captura';
@@ -132,8 +133,9 @@ async function passwordMatches(plain) {
 function renderGate() {
   app.innerHTML = `
     <div class="gate">
+      ${gateDecorHTML()}
       <div class="card">
-        <img class="logo" src="${ASSETS.logo}" alt="Refresco" />
+        <img class="logo" src="${UI.logo}" alt="Refresco" />
         <h1>Inspecciones Calidad</h1>
         <p>Refresco Iberia · Planta Alcolea</p>
         <form id="login-form">
@@ -143,6 +145,7 @@ function renderGate() {
           <p id="login-status" class="hint" aria-live="polite"></p>
         </form>
         <p class="hint">Acceso compartido del dpto. de Calidad.</p>
+        <p class="tagline">${TAGLINE}</p>
       </div>
     </div>`;
   document.getElementById('login-form').addEventListener('submit', async (e) => {
@@ -186,17 +189,19 @@ function renderGate() {
 function toolbar() {
   return `
     <div class="header">
+      <img class="header-stripe" src="${UI.stripeOrange}" alt="" aria-hidden="true" />
       <div class="brand">
-        <img class="brand-logo" src="${ASSETS.logo}" alt="Refresco" />
+        <img class="brand-logo" src="${UI.logo}" alt="Refresco" />
         <div>
           <h1>Inspecciones Calidad · Alcolea</h1>
-          <div style="opacity:.85;font-size:.85rem">Sesión = 1 informe · editable tras exportar</div>
+          <div class="header-sub">Sesión = 1 informe · editable tras exportar</div>
         </div>
       </div>
       <div class="row" style="flex:0">
         <button type="button" class="ghost" id="btn-logout">Salir</button>
       </div>
     </div>
+    ${ribbonHTML()}
     <div class="tabs">
       <button type="button" data-tab="captura" class="${tab==='captura'?'active':''}">📷 Captura</button>
       <button type="button" data-tab="lista" class="${tab==='lista'?'active':''}">📋 Lista (${session.photos.length})</button>
@@ -233,7 +238,7 @@ function renderCaptura() {
             <option value="resolved">Problema resuelto</option>
           </select>
         </div>
-        <p style="font-size:.85rem;color:#555;margin:.4rem 0 .6rem">Origen de la foto (elija uno):</p>
+        <p class="src-hint">Origen de la foto (elija uno):</p>
         <div class="row source-btns">
           <button type="button" id="btn-cam">📷 Cámara</button>
           <label class="pick" for="gallery-input">🖼 Galería
@@ -243,7 +248,7 @@ function renderCaptura() {
             <input type="file" id="file-input" accept="image/*" multiple class="hidden" />
           </label>
         </div>
-        <p class="hint-sm" style="font-size:.8rem;color:#666;margin-top:.5rem">
+        <p class="hint-sm src-help">
           Cámara = live / sensor trasero. Galería = álbumes del móvil. Archivo = explorador del PC (sin forzar cámara).
         </p>
       </div>
@@ -424,11 +429,11 @@ function renderExport() {
         <button type="button" id="btn-pdf" class="secondary" ${disabled}>Compartir / guardar PDF</button>
       </div>
       <div class="row" style="margin-top:.5rem">
-        <button type="button" id="btn-pptx-dl" class="ghost" style="color:#333;border-color:var(--border);background:#eee" ${disabled}>Solo descargar PPTX</button>
-        <button type="button" id="btn-pdf-dl" class="ghost" style="color:#333;border-color:var(--border);background:#eee" ${disabled}>Solo descargar PDF</button>
+        <button type="button" id="btn-pptx-dl" class="ghost soft" ${disabled}>Solo descargar PPTX</button>
+        <button type="button" id="btn-pdf-dl" class="ghost soft" ${disabled}>Solo descargar PDF</button>
       </div>
       <p class="hint-sm">En APK el archivo se escribe en Documentos/Descargas y luego abre el menú compartir. En PC use el selector de guardar o Descargas del navegador.</p>
-      <hr style="margin:1.2rem 0;border:none;border-top:1px solid var(--border)" />
+      <hr class="sep" />
       <p>Tras exportar puede seguir editando y volver a exportar. Para empezar un informe nuevo:</p>
       <button type="button" class="danger" id="btn-reset">Descartar sesión (pedir confirmación)</button>
     </div>`;
@@ -447,7 +452,7 @@ function render() {
   else body = renderExport();
 
   app.innerHTML = `<div class="app-shell">${toolbar()}${body}
-    <footer class="note">PWA local · Refresco Iberia Alcolea · v${APP_VERSION} (diseño visual v3)</footer></div>`;
+    <footer class="note"><img class="footer-r" src="${UI.rOrange}" alt="" aria-hidden="true" /><span>PWA local · Refresco Iberia Alcolea · v${APP_VERSION} · imagen Refresco 2026</span><em>${TAGLINE}</em></footer></div>`;
   bind();
 }
 

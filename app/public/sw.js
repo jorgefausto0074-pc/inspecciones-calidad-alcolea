@@ -1,5 +1,5 @@
 /* Service worker PWA — static assets only; never intercept blob:/data: or downloads */
-const CACHE = 'inspecciones-calidad-v1-3-3';
+const CACHE = 'inspecciones-calidad-v1-4-0';
 const ASSETS = [
   './',
   './index.html',
@@ -8,6 +8,25 @@ const ASSETS = [
   './assets/cenefa-ondulada.png',
   './assets/logo-mascotas.png',
   './assets/sello-resuelto.png',
+  // Imagen Refresco 2026 (interfaz v1.4.0)
+  './assets/marca2026/refresco-logo-naranja.png',
+  './assets/marca2026/refresco-logo-blanco.png',
+  './assets/marca2026/refresco-r-naranja.png',
+  './assets/marca2026/refresco-r-blanco.png',
+  './assets/marca2026/stripe-r-naranja.svg',
+  './assets/marca2026/stripe-r-azul.svg',
+  './assets/marca2026/circulos-azul.svg',
+  './assets/marca2026/foto-burbujas.webp',
+  './assets/marca2026/foto-stripe-zumos.webp',
+  './assets/marca2026/foto-linea-1.webp',
+  './assets/marca2026/foto-linea-2.webp',
+  './assets/marca2026/foto-linea-3.webp',
+  './assets/marca2026/foto-linea-4.webp',
+  './assets/marca2026/foto-linea-5.webp',
+  './assets/marca2026/foto-linea-6.webp',
+  './assets/marca2026/foto-linea-7.webp',
+  './assets/marca2026/favicon-64.png',
+  './assets/marca2026/icon-192.png',
 ];
 
 self.addEventListener('install', (e) => {
