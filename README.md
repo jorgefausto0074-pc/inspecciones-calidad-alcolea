@@ -3,10 +3,24 @@
 Aplicación web (PWA) para capturar incidencias de planta en **Refresco Iberia — planta Alcolea**, montar el informe con la estética de la plantilla corporativa y exportar **PPTX** y **PDF**.
 
 **PRD:** v1.3 (aprobado 2026-09-18)  
-**App:** v1.3.2 — acceso con hash PBKDF2; la contraseña de Jorge no cambia y ya no está en el repositorio  
+**App:** v1.3.3 — primera versión preparada para un APK firmado con clave de release permanente  
 **Cliente:** Jorge Quezada Ortega — Coordinador de Calidad, planta Alcolea (Córdoba)
 
 ---
+
+## Actualización v1.3.3 (firma de release)
+
+- Versión **1.3.3** (`versionCode` 6). Service worker: `inspecciones-calidad-v1-3-3`.
+- `assembleRelease` firma el APK si existe `android-wrap/android/keystore.properties` (`storeFile`, `storePassword`, `keyAlias`, `keyPassword`) o las variables `INSP_KEYSTORE_FILE`, `INSP_KEYSTORE_PASSWORD`, `INSP_KEY_ALIAS`, `INSP_KEY_PASSWORD`. Sin eso, el release queda sin firmar.
+- La clave no se sube al repositorio (`.gitignore`: `keystore.properties`, `*.keystore`, `*.jks`).
+- Se quitó `artifacts/inspecciones-calidad-debug.apk`: era una clave debug de usar y tirar y confundía con la app firmada. El APK firmado v1.3.3 se publica aparte, no en este repo.
+- Una contraseña incorrecta deja el aviso rojo «Contraseña incorrecta» en el formulario y en el toast.
+
+### Web (GitHub Pages) — refrescar caché
+
+1. Abrir https://jorgefausto0074-pc.github.io/inspecciones-calidad-alcolea/
+2. **Hard-refresh:** Ctrl+Shift+R / Cmd+Shift+R.
+3. Service worker: `inspecciones-calidad-v1-3-3`.
 
 ## Actualización v1.3.2 (contraseña fuera del repositorio)
 
@@ -124,27 +138,24 @@ No se incluyen datos inventados de planta: solo lo que el usuario captura.
 
 ## APK Android
 
-El APK **debug** precompilado está en el repositorio:
+El APK **debug** ya no está en el repositorio. Usaba una clave de depuración distinta en cada máquina y no debe instalarse encima de la app firmada.
 
 | Artefacto | Ruta |
 |-----------|------|
-| APK debug | [`artifacts/inspecciones-calidad-debug.apk`](artifacts/inspecciones-calidad-debug.apk) |
 | ZIP de la web (`dist`) | [`artifacts/inspecciones-calidad-web.zip`](artifacts/inspecciones-calidad-web.zip) |
 
 - **Package ID:** `com.refresco.alcolea.calidad`
-- **Versión:** `1.3.2` (`versionCode 5`) — desinstalar el APK anterior antes de instalar este si la firma no coincide
+- **Versión de código:** `1.3.3` (`versionCode` 6)
 - **Contraseña:** la misma de siempre (no está en el repositorio)
 - **Permisos:** `CAMERA`, `READ_MEDIA_IMAGES`, `READ_EXTERNAL_STORAGE` / `WRITE_EXTERNAL_STORAGE` (Android ≤12)
-- Es un APK **debug** (clave de depuración nueva; no es la firma del APK anterior). Válido para pruebas internas; no para Play Store. No hay keystore de release en el repo.
+- El APK de release firmado se publica fuera del repo. La clave permanece solo en la máquina que firma.
 
-### Instalar (sideload) — v1.3.2
+### Instalar (sideload) — v1.3.3
 
-1. **Desinstalar** cualquier «Inspecciones Calidad» previa (Ajustes → Apps → Desinstalar) si Android rechaza la actualización por firma distinta.
-2. Copiar el APK v1.3.2 al teléfono (USB, Drive, correo interno, o descargarlo del repo si es público).
-3. En Android: **Ajustes → Seguridad** (o Apps) → permitir **Instalar apps desconocidas**.
-4. Abrir `inspecciones-calidad-debug.apk` e instalar.
-5. Conceder **Cámara** (y fotos/galería si el sistema lo pide).
-6. Introducir la contraseña de Calidad (la misma que ya usaba el equipo).
+1. Instalar el APK **release** firmado que se publique con v1.3.3 (no un debug del repo).
+2. Si Android rechaza la actualización por firma distinta, desinstale la app anterior y vuelva a instalar. A partir de esta clave permanente, las siguientes versiones sí podrán instalarse encima.
+3. Conceder **Cámara** (y fotos/galería si el sistema lo pide).
+4. Introducir la contraseña de Calidad (la misma que ya usaba el equipo).
 
 Enlace de Drive (si se compartió aparte): [inspecciones-calidad-debug.apk](https://drive.google.com/file/d/1ZJtBPcCyE4jtbKrBD81wUYVpYRyaiF1F/view?usp=drivesdk).
 
@@ -183,23 +194,21 @@ La contraseña no se guarda en el repositorio. `app/src/config.js` tiene `auth.a
 2. Sustituya `salt` y `hash` (base64) en `app/src/config.js`. No deje la contraseña en claro en código, README ni `dist`.
 3. `cd app && npm ci && npm run build`.
 4. Commit + push a `main` (Actions actualiza el sitio).
-5. Si también usa el APK, regenérelo (ver abajo) y sustituya `artifacts/inspecciones-calidad-debug.apk`.
+5. Si también usa el APK, firme un release en la máquina que guarda la clave. No suba el APK ni el keystore.
 
-### Regenerar el APK
+### Regenerar el APK firmado
 
-El wrap Capacitor está en [`android-wrap/`](android-wrap/) (plugins `@capacitor/filesystem` y `@capacitor/share`, `versionName 1.3.2`). Para generar un APK nuevo a partir de `app/dist`:
+El wrap Capacitor está en [`android-wrap/`](android-wrap/) (plugins `@capacitor/filesystem` y `@capacitor/share`, `versionName 1.3.3`). La firma lee `android-wrap/android/keystore.properties` o las variables `INSP_KEYSTORE_*` / `INSP_KEY_*`. Ese fichero y los `*.keystore` / `*.jks` están en `.gitignore`.
 
 ```bash
 cd app && npm ci && npm run build
 cd ../android-wrap
 npm ci
 npx cap sync android
-cd android && ./gradlew assembleDebug
-cp app/build/outputs/apk/debug/app-debug.apk \
-  ../../artifacts/inspecciones-calidad-debug.apk
+cd android && ./gradlew assembleRelease
 ```
 
-Hace falta JDK y Android SDK. El APK de release firmado requiere un keystore propio. Recuerde **desinstalar** el APK anterior antes de instalar el nuevo.
+Hace falta JDK, Android SDK y la clave de release. Sin clave, `assembleRelease` genera un APK sin firmar. No copie el APK de vuelta al repositorio.
 
 ---
 
@@ -231,8 +240,8 @@ inspecciones-calidad-alcolea/
   README.md
   .github/workflows/pages.yml   # build Vite + GitHub Pages
   samples/informe-ejemplo-alcolea.pptx
-  artifacts/inspecciones-calidad-debug.apk
-  android-wrap/                 # Capacitor 8 + Filesystem/Share (APK 1.3.2)
+  artifacts/inspecciones-calidad-web.zip
+  android-wrap/                 # Capacitor 8 + Filesystem/Share (versionName 1.3.3)
   app/
     src/           # código fuente (share.js, export PPTX/PDF)
     public/        # SW v2-export, logo y sello
