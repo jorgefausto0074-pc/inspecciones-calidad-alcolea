@@ -120,12 +120,12 @@ ok(MOVE_TOAST_FIRST === 'Ya es la primera de este departamento', 'first copy');
 ok(MOVE_TOAST_LAST === 'Ya es la última de este departamento', 'last copy');
 
 const pkg = JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8'));
-ok(pkg.version === '1.3.3', 'app package version 1.3.3');
+ok(pkg.version === '1.5.0', 'app package version 1.5.0');
 const wrap = JSON.parse(readFileSync(path.join(root, '../android-wrap/package.json'), 'utf8'));
-ok(wrap.version === '1.3.3', 'android-wrap package version 1.3.3');
+ok(wrap.version === '1.5.0', 'android-wrap package version 1.5.0');
 const gradle = readFileSync(path.join(root, '../android-wrap/android/app/build.gradle'), 'utf8');
-ok(gradle.includes('versionCode 6'), 'versionCode 6');
-ok(gradle.includes('versionName "1.3.3"'), 'versionName 1.3.3');
+ok(gradle.includes('versionCode 8'), 'versionCode 8');
+ok(gradle.includes('versionName "1.5.0"'), 'versionName 1.5.0');
 
 if (failed) {
   console.error(`\n${failed} check(s) failed`);

@@ -158,8 +158,9 @@ ok(slides[2].deptName === 'JARABE', 'ficha shows department name');
 
 ok(COPY.footerMeta === 'Inspecciones calidad · Refresco Iberia · Planta Alcolea', 'footer meta exact');
 ok(!COPY.footerMeta.match(/\d{4}/), 'footer has no date/year');
-ok(ASSETS.logo.includes('logo-refresco.png'), 'clean logo path');
-ok(COLORS.green === '#03A64B' && COLORS.orange === '#D9871A', 'brand colors');
+ok(ASSETS.logo.includes('informe2026/logo-refresco-naranja.png'), 'Refresco 2026 logo path');
+ok(COLORS.navy === '#071A40' && COLORS.orange === '#FF6633' && COLORS.bright === '#083DC4', 'Refresco 2026 brand colors');
+ok(!('green' in COLORS), 'no green in report palette');
 
 const srcMain = readFileSync(path.join(root, 'src/main.js'), 'utf8');
 ok(srcMain.includes('data-photo-move'), 'Preview has ↑↓ controls');
@@ -180,12 +181,13 @@ const sessionSrc = readFileSync(path.join(root, 'src/session.js'), 'utf8');
 ok(sessionSrc.includes("sessionStorage.setItem(APP_CONFIG.authKey, '1')"), 'session stores only an auth flag');
 ok(!sessionSrc.includes('localStorage.setItem(APP_CONFIG.authKey'), 'auth flag is not in localStorage');
 
-ok(existsSync(path.join(root, 'public/assets/logo-refresco.png')), 'logo-refresco in public');
-ok(existsSync(path.join(root, 'public/assets/cenefa-ondulada.png')), 'cenefa in public');
-ok(existsSync(path.join(root, 'public/assets/logo-mascotas.png')), 'mascots in public');
+ok(existsSync(path.join(root, 'public/assets/informe2026/logo-refresco-naranja.png')), 'logo 2026 in public');
+ok(!existsSync(path.join(root, 'public/assets/logo-refresco.png')), 'old logo removed');
+ok(existsSync(path.join(root, 'public/assets/informe2026/portada-botellas.jpg')), 'cover photo in public');
+ok(existsSync(path.join(root, 'public/assets/informe2026/seccion-1.jpg')), 'section photos in public');
 
 const css = readFileSync(path.join(root, 'src/style.css'), 'utf8');
-ok(css.includes('#03A64B') && css.includes('#D9871A'), 'CSS uses v3 palette');
+ok(css.includes('#071A40') && css.includes('#FF6633') && !css.includes('#03A64B'), 'CSS uses Refresco 2026 palette, no green');
 ok(!/side.?stripe/i.test(css), 'no side-stripe wording');
 ok(css.includes('object-fit: contain'), 'logo not stretched');
 
@@ -217,7 +219,7 @@ sys.stdout.write('\\n'.join(parts))
 ok(xml.includes('INSPECCION INCIDENCIAS CALIDAD'), 'pptx has cover title');
 ok(!/INSPECCION INCIDENCIAS CALIDAD 20\d\d/.test(xml), 'pptx cover title has no year');
 ok(xml.includes(COPY.footerMeta) || xml.includes('Inspecciones calidad'), 'pptx has footer meta');
-ok(xml.includes('Refresco'), 'pptx has Refresco wordmark');
+ok(xml.includes('Refresco Iberia'), 'pptx has Refresco footer');
 ok(xml.includes('DEPARTAMENTO'), 'pptx section kicker');
 ok(xml.includes('JARABE'), 'pptx department name');
 ok(xml.includes('INCIDENCIAS JARABE'), 'pptx section title');

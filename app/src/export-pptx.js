@@ -1,9 +1,12 @@
 import PptxGenJS from 'pptxgenjs';
 import {
-  COLORS, COPY, LAYOUT, SLIDE, cardSlots, photoArea, captionArea, logoWidthForHeight,
+  COLORS, COPY, LAYOUT, SLIDE, FONT, cardSlots, photoArea, captionArea,
+  logoWidthForHeight, rWidthForHeight, sectionPhotoFor,
 } from './brand.js';
+import { DEPT_ORDER } from './config.js';
 import { buildPreviewSlides, locationLabel, commentTitle, statusLabel } from './slides.js';
 import { loadBrandAssets, containRect, dataUrlDimensions } from './assets-load.js';
+import { cleanPptxBlob } from './pptx-clean.js';
 
 const W = SLIDE.w;
 const H = SLIDE.h;
@@ -17,6 +20,14 @@ function noLine() {
   return { color: COLORS.whiteHex, transparency: 100, width: 0 };
 }
 
+function addRect(slide, pptx, box, color) {
+  slide.addShape(pptx.shapes.RECTANGLE, {
+    x: box.x, y: box.y, w: box.w, h: box.h,
+    fill: { color },
+    line: noLine(),
+  });
+}
+
 function addOval(slide, pptx, box, color) {
   slide.addShape(pptx.shapes.OVAL, {
     x: box.x, y: box.y, w: box.w, h: box.h,
@@ -25,84 +36,61 @@ function addOval(slide, pptx, box, color) {
   });
 }
 
+/** Pie navy con filete naranja, nº de página, texto del pie y logo Refresco naranja. */
 function addChrome(slide, pptx, assets, pageNum) {
   const L = LAYOUT;
-  if (assets.cenefa) {
-    slide.addImage({
-      data: assets.cenefa,
-      x: L.cenefa.x, y: L.cenefa.y, w: L.cenefa.w, h: L.cenefa.h,
-    });
-  } else {
-    slide.addShape(pptx.shapes.RECTANGLE, {
-      x: 0, y: H - 0.55, w: W, h: 0.55,
-      fill: { color: COLORS.greenHex },
-      line: noLine(),
-    });
-  }
-  if (assets.mascots) {
-    slide.addImage({
-      data: assets.mascots,
-      x: L.mascots.x, y: L.mascots.y, w: L.mascots.w, h: L.mascots.h,
-    });
-  }
+  addRect(slide, pptx, L.footerBar, COLORS.navyHex);
+  addRect(slide, pptx, L.footerAccent, COLORS.orangeHex);
   slide.addText(COPY.footerMeta, {
     x: L.footerMeta.x, y: L.footerMeta.y, w: L.footerMeta.w, h: L.footerMeta.h,
-    fontSize: 10, bold: true, color: COLORS.whiteHex, fontFace: 'Calibri',
+    fontSize: 10, bold: true, color: COLORS.whiteHex, fontFace: FONT,
     valign: 'middle', margin: 0,
   });
-  slide.addText(COPY.wordmark, {
-    x: L.wordmark.x, y: L.wordmark.y, w: L.wordmark.w, h: L.wordmark.h,
-    fontSize: 18, bold: true, color: COLORS.whiteHex, fontFace: 'Calibri',
-    align: 'right', valign: 'middle', margin: 0,
-  });
+  if (assets.logo) {
+    const h = L.footerLogo.h;
+    slide.addImage({ data: assets.logo, x: L.footerLogo.x, y: L.footerLogo.y, w: logoWidthForHeight(h), h });
+  }
   if (pageNum) {
     slide.addText(String(pageNum), {
       x: L.pageNum.x, y: L.pageNum.y, w: L.pageNum.w, h: L.pageNum.h,
-      fontSize: 9, bold: true, color: COLORS.whiteHex, fontFace: 'Calibri',
+      fontSize: 10, bold: true, color: COLORS.orangeHex, fontFace: FONT,
       align: 'left', valign: 'middle', margin: 0,
     });
   }
 }
 
+function addCornerR(slide, assets) {
+  if (!assets.rLogo) return;
+  const h = LAYOUT.cornerR.h;
+  slide.addImage({ data: assets.rLogo, x: LAYOUT.cornerR.x, y: LAYOUT.cornerR.y, w: rWidthForHeight(h), h });
+}
+
 function addCover(pptx, assets, model) {
   const slide = pptx.addSlide();
-  slide.background = { color: COLORS.bgHex };
+  slide.background = { color: COLORS.navyHex };
   const L = LAYOUT;
-  addOval(slide, pptx, L.coverOrbGreen, COLORS.greenHex);
-  addOval(slide, pptx, L.coverOrbOrange, 'E8922A');
-  addOval(slide, pptx, L.coverOrbWhite, 'F3FBF6');
-
-  slide.addShape(pptx.shapes.ROUNDED_RECTANGLE, {
-    x: L.coverLogoCard.x, y: L.coverLogoCard.y, w: L.coverLogoCard.w, h: L.coverLogoCard.h,
-    fill: { color: COLORS.whiteHex },
-    line: noLine(),
-    rectRadius: 0.12,
-    shadow: { type: 'outer', color: '2F3E46', blur: 10, opacity: 0.12, offset: 3 },
-  });
-  if (assets.logo) {
-    const logoH = L.coverLogo.h;
-    const logoW = logoWidthForHeight(logoH);
-    const logoX = L.coverLogoCard.x + (L.coverLogoCard.w - logoW) / 2;
-    const logoY = L.coverLogoCard.y + (L.coverLogoCard.h - logoH) / 2;
-    slide.addImage({
-      data: assets.logo,
-      x: logoX, y: logoY, w: logoW, h: logoH,
-      sizing: { type: 'contain', w: logoW, h: logoH },
-    });
+  if (assets.cover) {
+    slide.addImage({ data: assets.cover, x: L.coverPhoto.x, y: L.coverPhoto.y, w: L.coverPhoto.w, h: L.coverPhoto.h });
   }
+  L.coverCircles.forEach((c) => addOval(slide, pptx, c, COLORS.brightHex));
+  if (assets.logo) {
+    const h = L.coverLogo.h;
+    slide.addImage({ data: assets.logo, x: L.coverLogo.x, y: L.coverLogo.y, w: logoWidthForHeight(h), h });
+  }
+  addRect(slide, pptx, L.coverRule, COLORS.orangeHex);
   slide.addText(model.label || COPY.coverLabel, {
     x: L.coverLabel.x, y: L.coverLabel.y, w: L.coverLabel.w, h: L.coverLabel.h,
-    fontSize: 11, bold: true, color: COLORS.orangeHex, fontFace: 'Calibri',
+    fontSize: 12, bold: true, color: COLORS.orangeHex, fontFace: FONT,
     margin: 0, charSpacing: 3,
   });
   slide.addText((model.title || '').toUpperCase(), {
     x: L.coverTitle.x, y: L.coverTitle.y, w: L.coverTitle.w, h: L.coverTitle.h,
-    fontSize: 30, bold: true, color: COLORS.greenHex, fontFace: 'Calibri',
+    fontSize: 34, bold: true, color: COLORS.whiteHex, fontFace: FONT,
     align: 'left', valign: 'top', margin: 0,
   });
   slide.addText((model.subtitle || '').toUpperCase(), {
     x: L.coverSubtitle.x, y: L.coverSubtitle.y, w: L.coverSubtitle.w, h: L.coverSubtitle.h,
-    fontSize: 13, bold: true, color: COLORS.charcoalHex, fontFace: 'Calibri',
+    fontSize: 14, bold: true, color: COLORS.lightblueHex, fontFace: FONT,
     margin: 0,
   });
   addChrome(slide, pptx, assets, null);
@@ -110,24 +98,28 @@ function addCover(pptx, assets, model) {
 
 function addSection(pptx, assets, model, pageNum) {
   const slide = pptx.addSlide();
-  slide.background = { color: COLORS.bgHex };
+  slide.background = { color: COLORS.navyHex };
   const L = LAYOUT;
-  addOval(slide, pptx, L.sectionOrbLeft, 'F0E4D0');
-  addOval(slide, pptx, L.sectionOrbRight, 'D8F3E3');
+  const photo = assets.sections?.[sectionPhotoFor(model.code, DEPT_ORDER)];
+  if (photo) {
+    slide.addImage({ data: photo, x: L.sectionPhoto.x, y: L.sectionPhoto.y, w: L.sectionPhoto.w, h: L.sectionPhoto.h });
+  }
+  L.sectionCircles.forEach((c) => addOval(slide, pptx, c, COLORS.brightHex));
+  addRect(slide, pptx, L.sectionRule, COLORS.orangeHex);
   slide.addText(COPY.departamento, {
     x: L.sectionKicker.x, y: L.sectionKicker.y, w: L.sectionKicker.w, h: L.sectionKicker.h,
-    fontSize: 12, bold: true, color: COLORS.orangeHex, fontFace: 'Calibri',
-    align: 'center', margin: 0, charSpacing: 4,
+    fontSize: 12, bold: true, color: COLORS.orangeHex, fontFace: FONT,
+    align: 'left', margin: 0, charSpacing: 4,
   });
   slide.addText((model.deptName || '').toUpperCase(), {
     x: L.sectionDept.x, y: L.sectionDept.y, w: L.sectionDept.w, h: L.sectionDept.h,
-    fontSize: 44, bold: true, color: COLORS.orangeHex, fontFace: 'Calibri',
-    align: 'center', valign: 'middle', margin: 0,
+    fontSize: 44, bold: true, color: COLORS.whiteHex, fontFace: FONT,
+    align: 'left', valign: 'middle', margin: 0,
   });
   slide.addText((model.title || '').toUpperCase(), {
     x: L.sectionTitle.x, y: L.sectionTitle.y, w: L.sectionTitle.w, h: L.sectionTitle.h,
-    fontSize: 24, bold: true, color: COLORS.greenHex, fontFace: 'Calibri',
-    align: 'center', margin: 0,
+    fontSize: 22, bold: true, color: COLORS.lightblueHex, fontFace: FONT,
+    align: 'left', margin: 0,
   });
   addChrome(slide, pptx, assets, pageNum);
 }
@@ -140,13 +132,13 @@ function addStamp(slide, pptx, photoBox, photo) {
   const resolved = photo.status === 'resolved';
   slide.addShape(pptx.shapes.ROUNDED_RECTANGLE, {
     x, y, w, h,
-    fill: { color: resolved ? COLORS.greenHex : COLORS.orangeAltHex },
+    fill: { color: resolved ? COLORS.brightHex : COLORS.orangeHex },
     line: noLine(),
     rectRadius: 0.12,
   });
   slide.addText(statusLabel(photo), {
     x, y, w, h,
-    fontSize: 8, bold: true, color: COLORS.whiteHex, fontFace: 'Calibri',
+    fontSize: 9, bold: true, color: COLORS.whiteHex, fontFace: FONT,
     align: 'center', valign: 'middle', margin: 0,
   });
 }
@@ -155,26 +147,26 @@ function addFicha(pptx, assets, model, pageNum) {
   const slide = pptx.addSlide();
   slide.background = { color: COLORS.bgHex };
   const L = LAYOUT;
-  addOval(slide, pptx, L.fichaOrb, 'D8F3E3');
+  addCornerR(slide, assets);
   slide.addText((model.deptName || '').toUpperCase(), {
     x: L.fichaDept.x, y: L.fichaDept.y, w: L.fichaDept.w, h: L.fichaDept.h,
-    fontSize: 22, bold: true, color: COLORS.orangeHex, fontFace: 'Calibri',
+    fontSize: 22, bold: true, color: COLORS.navyHex, fontFace: FONT,
     margin: 0,
   });
   slide.addText(`FICHA ${model.fichaIndex} DE ${model.fichaTotal}`, {
     x: L.fichaIndex.x, y: L.fichaIndex.y, w: L.fichaIndex.w, h: L.fichaIndex.h,
-    fontSize: 12, bold: true, color: COLORS.greenHex, fontFace: 'Calibri',
+    fontSize: 12, bold: true, color: COLORS.orangeHex, fontFace: FONT,
     margin: 0,
   });
   slide.addShape(pptx.shapes.ROUNDED_RECTANGLE, {
     x: L.fichaBadge.x, y: L.fichaBadge.y, w: L.fichaBadge.w, h: L.fichaBadge.h,
-    fill: { color: COLORS.orangeHex },
+    fill: { color: COLORS.navyHex },
     line: noLine(),
     rectRadius: 0.16,
   });
   slide.addText((model.deptSection || '').toUpperCase(), {
     x: L.fichaBadge.x, y: L.fichaBadge.y, w: L.fichaBadge.w, h: L.fichaBadge.h,
-    fontSize: 9, bold: true, color: COLORS.whiteHex, fontFace: 'Calibri',
+    fontSize: 9, bold: true, color: COLORS.whiteHex, fontFace: FONT,
     align: 'center', valign: 'middle', margin: 0,
   });
 
@@ -184,16 +176,11 @@ function addFicha(pptx, assets, model, pageNum) {
     slide.addShape(pptx.shapes.ROUNDED_RECTANGLE, {
       x: card.x, y: card.y, w: card.w, h: card.h,
       fill: { color: COLORS.whiteHex },
-      line: { color: 'E4EEE7', width: 0.75 },
+      line: { color: COLORS.lightgreyHex, width: 0.75 },
       rectRadius: 0.12,
-      shadow: { type: 'outer', color: '2F3E46', blur: 8, opacity: 0.1, offset: 2 },
     });
     const ph = photoArea(card);
-    slide.addShape(pptx.shapes.RECTANGLE, {
-      x: ph.x, y: ph.y, w: ph.w, h: ph.h,
-      fill: { color: 'D5E6DB' },
-      line: noLine(),
-    });
+    addRect(slide, pptx, ph, COLORS.lightgreyHex);
     if (photo.dataUrl) {
       try {
         const dim = dataUrlDimensions(photo.dataUrl);
@@ -209,14 +196,15 @@ function addFicha(pptx, assets, model, pageNum) {
     }
     addStamp(slide, pptx, ph, photo);
     const cap = captionArea(card);
+    addRect(slide, pptx, { x: card.x, y: ph.y + ph.h, w: card.w, h: 0.04 }, COLORS.orangeHex);
     slide.addText(locationLabel(photo), {
       x: cap.x, y: cap.y, w: cap.w, h: 0.22,
-      fontSize: 10, bold: true, color: COLORS.orangeHex, fontFace: 'Calibri',
+      fontSize: 11, bold: true, color: COLORS.orangeHex, fontFace: FONT,
       margin: 0,
     });
     slide.addText(commentTitle(photo), {
       x: cap.x, y: cap.y + 0.22, w: cap.w, h: 0.42,
-      fontSize: 11, bold: true, color: COLORS.charcoalHex, fontFace: 'Calibri',
+      fontSize: 12, bold: true, color: COLORS.navyHex, fontFace: FONT,
       margin: 0, valign: 'top',
     });
   });
@@ -225,7 +213,7 @@ function addFicha(pptx, assets, model, pageNum) {
 }
 
 /**
- * Genera PPTX 16:9 v3. Devuelve { blob, fileName } (no escribe a disco).
+ * Genera PPTX 16:9 con la imagen Refresco 2026. Devuelve { blob, fileName } (no escribe a disco).
  */
 export async function exportPptx(session, { assets } = {}) {
   const pptx = new PptxGenJS();
@@ -233,6 +221,7 @@ export async function exportPptx(session, { assets } = {}) {
   pptx.layout = 'WIDE16x9';
   pptx.author = 'Refresco Iberia — Calidad Alcolea';
   pptx.title = session.coverTitle || 'Inspección incidencias';
+  pptx.theme = { headFontFace: FONT, bodyFontFace: FONT };
 
   const brand = assets || await loadBrandAssets();
   const slides = buildPreviewSlides(session);
@@ -245,9 +234,7 @@ export async function exportPptx(session, { assets } = {}) {
   });
 
   const fileName = safeFileName(session);
-  const output = await pptx.write({ outputType: 'blob' });
-  const blob = output instanceof Blob
-    ? output
-    : new Blob([output], { type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation' });
+  const output = await pptx.write({ outputType: 'arraybuffer' });
+  const blob = await cleanPptxBlob(output);
   return { blob, fileName };
 }
