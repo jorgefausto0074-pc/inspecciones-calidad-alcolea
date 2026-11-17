@@ -1,6 +1,11 @@
-/** Configuración editable — cambiar contraseña aquí o en config.local.js */
+/** Configuración editable. El acceso guarda solo el hash; no poner la contraseña en claro. */
 export const APP_CONFIG = {
-  password: 'CalidadAlcolea2026',
+  auth: {
+    algo: 'PBKDF2-SHA256',
+    iterations: 600000,
+    salt: 'qRn+CPrv4chtBei3GktZhA==',
+    hash: 'hltCl06Ix13LMXyiDtI2chnBk69//UNXs98mEcul0WA=',
+  },
   sessionKey: 'inspecciones-calidad-session-v1',
   authKey: 'inspecciones-calidad-auth-v1',
   plantName: 'REFRESCO IBERIA PLANTA ALCOLEA',

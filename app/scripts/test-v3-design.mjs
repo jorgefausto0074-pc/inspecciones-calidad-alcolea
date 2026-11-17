@@ -163,8 +163,22 @@ ok(COLORS.green === '#03A64B' && COLORS.orange === '#D9871A', 'brand colors');
 
 const srcMain = readFileSync(path.join(root, 'src/main.js'), 'utf8');
 ok(srcMain.includes('data-photo-move'), 'Preview has ↑↓ controls');
-ok(srcMain.includes('CalidadAlcolea2026') === false, 'password stays in config not hardcoded in preview');
-ok(readFileSync(path.join(root, 'src/config.js'), 'utf8').includes("password: 'CalidadAlcolea2026'"), 'password gate unchanged');
+const configSrc = readFileSync(path.join(root, 'src/config.js'), 'utf8');
+ok(!/password\s*:/.test(configSrc), 'config has no plaintext password field');
+ok(configSrc.includes("algo: 'PBKDF2-SHA256'"), 'auth algo is PBKDF2-SHA256');
+ok(configSrc.includes('iterations: 600000'), 'auth iterations 600000');
+ok(configSrc.includes("salt: 'qRn+CPrv4chtBei3GktZhA=='"), 'auth salt stored');
+ok(configSrc.includes("hash: 'hltCl06Ix13LMXyiDtI2chnBk69//UNXs98mEcul0WA='"), 'auth hash stored');
+ok(srcMain.includes('crypto.subtle'), 'login derives with WebCrypto');
+ok(srcMain.includes("name: 'PBKDF2'"), 'PBKDF2 deriveBits');
+ok(srcMain.includes("hash: 'SHA-256'"), 'SHA-256');
+ok(srcMain.includes('256'), 'derived length 256 bits');
+ok(srcMain.includes('Comprobando…'), 'checking state in Spanish');
+ok(srcMain.includes('function constantTimeEqual'), 'constant-time compare');
+ok(!srcMain.includes('APP_CONFIG.password'), 'main does not read a plaintext password');
+const sessionSrc = readFileSync(path.join(root, 'src/session.js'), 'utf8');
+ok(sessionSrc.includes("sessionStorage.setItem(APP_CONFIG.authKey, '1')"), 'session stores only an auth flag');
+ok(!sessionSrc.includes('localStorage.setItem(APP_CONFIG.authKey'), 'auth flag is not in localStorage');
 
 ok(existsSync(path.join(root, 'public/assets/logo-refresco.png')), 'logo-refresco in public');
 ok(existsSync(path.join(root, 'public/assets/cenefa-ondulada.png')), 'cenefa in public');

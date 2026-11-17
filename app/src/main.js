@@ -84,6 +84,51 @@ function syncDraftNameField(force = false) {
   }
 }
 
+function bytesFromBase64(b64) {
+  const bin = atob(b64);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i += 1) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
+/** XOR every byte, including a length mismatch, so the loop does not stop early. */
+function constantTimeEqual(a, b) {
+  const len = Math.max(a.length, b.length);
+  let diff = a.length ^ b.length;
+  for (let i = 0; i < len; i += 1) {
+    const av = i < a.length ? a[i] : 0;
+    const bv = i < b.length ? b[i] : 0;
+    diff |= av ^ bv;
+  }
+  return diff === 0;
+}
+
+async function passwordMatches(plain) {
+  const auth = APP_CONFIG.auth;
+  if (!auth || auth.algo !== 'PBKDF2-SHA256' || !auth.iterations || !auth.salt || !auth.hash) {
+    return false;
+  }
+  if (!globalThis.crypto?.subtle) throw new Error('WebCrypto no disponible');
+  const material = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(plain),
+    'PBKDF2',
+    false,
+    ['deriveBits'],
+  );
+  const bits = await crypto.subtle.deriveBits(
+    {
+      name: 'PBKDF2',
+      salt: bytesFromBase64(auth.salt),
+      iterations: auth.iterations,
+      hash: 'SHA-256',
+    },
+    material,
+    256,
+  );
+  return constantTimeEqual(new Uint8Array(bits), bytesFromBase64(auth.hash));
+}
+
 function renderGate() {
   app.innerHTML = `
     <div class="gate">
@@ -94,20 +139,45 @@ function renderGate() {
         <form id="login-form">
           <label for="pwd">Contraseña</label>
           <input id="pwd" type="password" autocomplete="current-password" placeholder="••••••••" required />
-          <button type="submit" style="width:100%">Entrar</button>
+          <button type="submit" id="login-submit" style="width:100%">Entrar</button>
+          <p id="login-status" class="hint" aria-live="polite"></p>
         </form>
-        <p class="hint">Acceso compartido del dpto. de Calidad. La contraseña se define en la configuración de la app.</p>
+        <p class="hint">Acceso compartido del dpto. de Calidad.</p>
       </div>
     </div>`;
-  document.getElementById('login-form').addEventListener('submit', (e) => {
+  document.getElementById('login-form').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const v = document.getElementById('pwd').value;
-    if (v === APP_CONFIG.password) {
+    const input = document.getElementById('pwd');
+    const btn = document.getElementById('login-submit');
+    const status = document.getElementById('login-status');
+    const plain = input.value;
+    input.disabled = true;
+    btn.disabled = true;
+    btn.textContent = 'Comprobando…';
+    status.textContent = 'Comprobando…';
+    let ok = false;
+    try {
+      ok = await passwordMatches(plain);
+    } catch (err) {
+      console.error(err);
+      toast('No se pudo comprobar la contraseña', true);
+      input.disabled = false;
+      btn.disabled = false;
+      btn.textContent = 'Entrar';
+      status.textContent = '';
+      return;
+    }
+    if (ok) {
       setAuthenticated(true);
       render();
-    } else {
-      toast('Contraseña incorrecta', true);
+      return;
     }
+    toast('Contraseña incorrecta', true);
+    input.disabled = false;
+    btn.disabled = false;
+    btn.textContent = 'Entrar';
+    status.textContent = '';
+    input.focus();
   });
 }
 

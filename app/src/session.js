@@ -45,6 +45,7 @@ export function isAuthenticated() {
   return sessionStorage.getItem(APP_CONFIG.authKey) === '1';
 }
 
+/** Remember the tab session with a flag only. Never store the password or a typed secret. */
 export function setAuthenticated(ok) {
   if (ok) sessionStorage.setItem(APP_CONFIG.authKey, '1');
   else sessionStorage.removeItem(APP_CONFIG.authKey);
