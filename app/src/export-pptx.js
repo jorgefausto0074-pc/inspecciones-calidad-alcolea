@@ -7,13 +7,14 @@ import { DEPT_ORDER } from './config.js';
 import { buildPreviewSlides, locationLabel, commentTitle, statusLabel } from './slides.js';
 import { loadBrandAssets, containRect, dataUrlDimensions } from './assets-load.js';
 import { cleanPptxBlob } from './pptx-clean.js';
+import { exportFileName } from './filename.js';
+import { sessionWithNormalizedPhotos } from './image-normalize.js';
 
 const W = SLIDE.w;
 const H = SLIDE.h;
 
 function safeFileName(session) {
-  const safe = (session.coverTitle || 'informe').replace(/[^\w\-áéíóúñÁÉÍÓÚÑ ]+/gi, '').slice(0, 60).trim() || 'informe';
-  return `${safe.replace(/\s+/g, '_')}.pptx`;
+  return exportFileName(session.coverTitle || 'INFORME INSPECCION', '.pptx');
 }
 
 function noLine() {
@@ -48,7 +49,7 @@ function addChrome(slide, pptx, assets, pageNum) {
   });
   if (assets.logo) {
     const h = L.footerLogo.h;
-    slide.addImage({ data: assets.logo, x: L.footerLogo.x, y: L.footerLogo.y, w: logoWidthForHeight(h), h });
+    slide.addImage({ data: assets.logo, x: L.footerLogo.x, y: L.footerLogo.y, w: logoWidthForHeight(h), h, altText: 'Logotipo Refresco' });
   }
   if (pageNum) {
     slide.addText(String(pageNum), {
@@ -62,7 +63,7 @@ function addChrome(slide, pptx, assets, pageNum) {
 function addCornerR(slide, assets) {
   if (!assets.rLogo) return;
   const h = LAYOUT.cornerR.h;
-  slide.addImage({ data: assets.rLogo, x: LAYOUT.cornerR.x, y: LAYOUT.cornerR.y, w: rWidthForHeight(h), h });
+  slide.addImage({ data: assets.rLogo, x: LAYOUT.cornerR.x, y: LAYOUT.cornerR.y, w: rWidthForHeight(h), h, altText: 'Símbolo R de Refresco' });
 }
 
 function addCover(pptx, assets, model) {
@@ -70,12 +71,12 @@ function addCover(pptx, assets, model) {
   slide.background = { color: COLORS.navyHex };
   const L = LAYOUT;
   if (assets.cover) {
-    slide.addImage({ data: assets.cover, x: L.coverPhoto.x, y: L.coverPhoto.y, w: L.coverPhoto.w, h: L.coverPhoto.h });
+    slide.addImage({ data: assets.cover, x: L.coverPhoto.x, y: L.coverPhoto.y, w: L.coverPhoto.w, h: L.coverPhoto.h, altText: 'Fotografía de portada Refresco' });
   }
   L.coverCircles.forEach((c) => addOval(slide, pptx, c, COLORS.brightHex));
   if (assets.logo) {
     const h = L.coverLogo.h;
-    slide.addImage({ data: assets.logo, x: L.coverLogo.x, y: L.coverLogo.y, w: logoWidthForHeight(h), h });
+    slide.addImage({ data: assets.logo, x: L.coverLogo.x, y: L.coverLogo.y, w: logoWidthForHeight(h), h, altText: 'Logotipo Refresco' });
   }
   addRect(slide, pptx, L.coverRule, COLORS.orangeHex);
   slide.addText(model.label || COPY.coverLabel, {
@@ -102,7 +103,7 @@ function addSection(pptx, assets, model, pageNum) {
   const L = LAYOUT;
   const photo = assets.sections?.[sectionPhotoFor(model.code, DEPT_ORDER)];
   if (photo) {
-    slide.addImage({ data: photo, x: L.sectionPhoto.x, y: L.sectionPhoto.y, w: L.sectionPhoto.w, h: L.sectionPhoto.h });
+    slide.addImage({ data: photo, x: L.sectionPhoto.x, y: L.sectionPhoto.y, w: L.sectionPhoto.w, h: L.sectionPhoto.h, altText: `Fotografía de sección ${model.deptName || ''}`.trim() });
   }
   L.sectionCircles.forEach((c) => addOval(slide, pptx, c, COLORS.brightHex));
   addRect(slide, pptx, L.sectionRule, COLORS.orangeHex);
@@ -188,7 +189,7 @@ function addFicha(pptx, assets, model, pageNum) {
         slide.addImage({
           data: photo.dataUrl,
           x: fit.x, y: fit.y, w: fit.w, h: fit.h,
-          sizing: { type: 'contain', w: fit.w, h: fit.h },
+          altText: `Foto de incidencia: ${locationLabel(photo)} — ${commentTitle(photo)}`,
         });
       } catch {
         /* keep placeholder fill */
@@ -213,28 +214,41 @@ function addFicha(pptx, assets, model, pageNum) {
 }
 
 /**
- * Genera PPTX 16:9 con la imagen Refresco 2026. Devuelve { blob, fileName } (no escribe a disco).
+ * Genera PPTX 16:9 editable (cuadros de texto y fotos insertadas) con la imagen Refresco 2026,
+ * en español (es-ES). Devuelve { blob, fileName, skipped } (no escribe a disco).
  */
-export async function exportPptx(session, { assets } = {}) {
+export async function exportPptx(rawSession, { assets } = {}) {
+  const { session, skipped } = await sessionWithNormalizedPhotos(rawSession);
   const pptx = new PptxGenJS();
-  pptx.defineLayout({ name: 'WIDE16x9', width: W, height: H });
-  pptx.layout = 'WIDE16x9';
-  pptx.author = 'Refresco Iberia — Calidad Alcolea';
-  pptx.title = session.coverTitle || 'Inspección incidencias';
+  pptx.defineLayout({ name: 'PANORAMICA_16x9', width: W, height: H });
+  pptx.layout = 'PANORAMICA_16x9';
+  const title = session.coverTitle || 'Inspección de incidencias de calidad';
+  pptx.author = 'Refresco Iberia · Calidad Planta Alcolea';
+  pptx.company = 'Refresco Iberia';
+  pptx.subject = 'Informe de inspección de incidencias de calidad';
+  pptx.title = title;
   pptx.theme = { headFontFace: FONT, bodyFontFace: FONT };
 
   const brand = assets || await loadBrandAssets();
   const slides = buildPreviewSlides(session);
+  const slideTitles = [];
 
   slides.forEach((model, idx) => {
     const page = idx + 1;
-    if (model.type === 'cover') addCover(pptx, brand, model);
-    else if (model.type === 'section') addSection(pptx, brand, model, page);
-    else addFicha(pptx, brand, model, page);
+    if (model.type === 'cover') {
+      addCover(pptx, brand, model);
+      slideTitles.push(`Portada · ${model.title || title}`);
+    } else if (model.type === 'section') {
+      addSection(pptx, brand, model, page);
+      slideTitles.push(`Departamento · ${model.deptName || ''}`);
+    } else {
+      addFicha(pptx, brand, model, page);
+      slideTitles.push(`${model.deptName || ''} · Ficha ${model.fichaIndex} de ${model.fichaTotal}`);
+    }
   });
 
   const fileName = safeFileName(session);
   const output = await pptx.write({ outputType: 'arraybuffer' });
-  const blob = await cleanPptxBlob(output);
-  return { blob, fileName };
+  const blob = await cleanPptxBlob(output, { title, slideTitles });
+  return { blob, fileName, skipped };
 }

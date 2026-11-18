@@ -4,6 +4,17 @@ Aplicación web (PWA) para capturar incidencias de planta en **Refresco Iberia �
 
 **PRD:** v1.3 (aprobado 2026-09-18)  
 **App:** v1.3.3 — primera versión preparada para un APK firmado con clave de release permanente  
+
+## v1.5.1 (18/11/2026) — PowerPoint corregido + recordar contraseña
+
+- **PPTX abre en PowerPoint de escritorio sin errores:** paquete reconstruido (sin entradas de carpeta, `[Content_Types].xml` primero, solo tipos `image/jpeg`/`image/png` reales). Las fotos WebP/HEIC/AVIF de la galería se convierten a JPEG (máx. 1600 px); si el navegador no puede leer una foto, la ficha queda con el hueco gris y se avisa, en lugar de generar un archivo ilegible.
+- **Nombre seguro** (`INSPECCION_INCIDENCIAS_CALIDAD.pptx`): sin tildes ni símbolos y máx. 40 caracteres de base, para que el diálogo «Guardar como» de Windows no recorte `.pptx` a `.ppt`.
+- **Todo en español:** textos `lang="es-ES"`, propiedades del documento (título, asunto, idioma, títulos de diapositiva) y nombres de formas en español. Texto en cuadros editables y fotos como imágenes insertadas.
+- **Compartir en PC:** Chrome/Edge no permiten compartir PowerPoint; ahora se abre «Guardar como» (o descarga) con aviso claro, sin error. El selector se abre al instante (antes de generar) para no perder el clic; el informe se pre-genera al entrar en «Exportar».
+- **PDF:** mismo nombre seguro, metadatos en español.
+- **Inicio de sesión:** casilla «Recordar contraseña en este dispositivo» (desmarcada por defecto). No guarda la contraseña: guarda un token aleatorio con huella SHA-256 ligada al hash configurado (si cambia la contraseña, deja de valer). Botón **Cerrar sesión** en la cabecera lo borra.
+- Service worker `inspecciones-calidad-v1-5-1`; APK `versionCode 9`, `versionName 1.5.1`.
+
 **Cliente:** Jorge Quezada Ortega — Coordinador de Calidad, planta Alcolea (Córdoba)
 
 ---

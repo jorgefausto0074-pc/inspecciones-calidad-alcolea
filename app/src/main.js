@@ -14,6 +14,9 @@ import {
   logoWidthForHeight, rWidthForHeight, sectionPhotoFor,
 } from './brand.js';
 import { shareOrDownload, downloadOnly } from './share.js';
+import { exportFileName } from './filename.js';
+import { rememberDevice, forgetDevice, isDeviceRemembered } from './remember.js';
+import { PPTX_MIME } from './pptx-clean.js';
 import { UI, TAGLINE, gateDecorHTML, ribbonHTML } from './ui-brand.js';
 
 let session = loadSession();
@@ -31,7 +34,9 @@ function toast(msg, err = false) {
   el.className = `toast${err ? ' err' : ''}`;
   el.textContent = msg;
   document.body.appendChild(el);
-  setTimeout(() => el.remove(), 2200);
+  // Mensajes largos o de error se leen con calma
+  const ms = err ? 6500 : (String(msg).length > 60 ? 5000 : 2200);
+  setTimeout(() => el.remove(), ms);
 }
 
 /** Click + touchend with debounce so Android WebView does not swallow Lista ↑↓. */
@@ -144,6 +149,10 @@ function renderGate() {
         <form id="login-form">
           <label for="pwd">Contraseña</label>
           <input id="pwd" type="password" autocomplete="current-password" placeholder="••••••••" required />
+          <label class="remember" for="remember-pwd">
+            <input id="remember-pwd" type="checkbox" />
+            <span>Recordar contraseña en este dispositivo</span>
+          </label>
           <button type="submit" id="login-submit" style="width:100%">Entrar</button>
           <p id="login-status" class="hint" aria-live="polite"></p>
         </form>
@@ -176,6 +185,11 @@ function renderGate() {
     }
     if (ok) {
       setAuthenticated(true);
+      if (document.getElementById('remember-pwd')?.checked) {
+        try { await rememberDevice(); } catch (err) { console.warn('[auth] no se pudo recordar', err); }
+      } else {
+        forgetDevice();
+      }
       render();
       return;
     }
@@ -201,7 +215,7 @@ function toolbar() {
         </div>
       </div>
       <div class="row" style="flex:0">
-        <button type="button" class="ghost" id="btn-logout">Salir</button>
+        <button type="button" class="ghost logout" id="btn-logout" title="Cerrar sesión en este dispositivo"><svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l-5-5 5-5M5 12h11"/></svg><span>Cerrar sesión</span></button>
       </div>
     </div>
     ${ribbonHTML()}
@@ -468,7 +482,9 @@ function render() {
 function bind() {
   document.getElementById('btn-logout')?.addEventListener('click', async () => {
     await stopCamera();
+    forgetDevice();
     setAuthenticated(false);
+    toast('Sesión cerrada en este dispositivo');
     render();
   });
   document.querySelectorAll('.tabs [data-tab]').forEach((btn) => {
@@ -705,20 +721,55 @@ function bindPreview() {
   });
 }
 
+/** Informe ya generado para la sesión actual (los botones responden al instante y no pierden el clic). */
+let prepared = { key: '', pptx: null, pdf: null };
+
+function exportKey() {
+  // Solo el contenido del informe (no lastExportAt), para reutilizar lo ya generado
+  return JSON.stringify([
+    session.id, session.coverTitle, session.coverSubtitle, session.slideTitle,
+    (session.photos || []).map((p) => [p.id, p.code, p.ubicacion, p.comentario, p.status, p.displayName, (p.dataUrl || '').length]),
+  ]);
+}
+
+function generate(kind) {
+  const key = exportKey();
+  if (prepared.key !== key) prepared = { key, pptx: null, pdf: null };
+  if (!prepared[kind]) {
+    const run = kind === 'pptx' ? exportPptx(session) : exportPdf(session);
+    prepared[kind] = run.catch((e) => { if (prepared.key === key) prepared[kind] = null; throw e; });
+  }
+  return prepared[kind];
+}
+
+function prepareExports() {
+  if (!(session.photos || []).length) return;
+  setTimeout(() => {
+    generate('pptx').catch(() => undefined);
+    generate('pdf').catch(() => undefined);
+  }, 300);
+}
+
 async function doExport(kind, mode) {
   try {
-    toast(kind === 'pptx' ? 'Generando PPTX…' : 'Generando PDF…');
-    const result = kind === 'pptx' ? await exportPptx(session) : await exportPdf(session);
-    const mime = kind === 'pptx'
-      ? 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
-      : 'application/pdf';
+    const mime = kind === 'pptx' ? PPTX_MIME : 'application/pdf';
+    const fileName = exportFileName(session.coverTitle || 'INFORME INSPECCION', kind === 'pptx' ? '.pptx' : '.pdf');
+    let skipped = 0;
+    const factory = async () => {
+      toast(kind === 'pptx' ? 'Generando PPTX…' : 'Generando PDF…');
+      const result = await generate(kind);
+      skipped = result.skipped || 0;
+      return result.blob;
+    };
     // Helpers toast accurately — never claim "descargado" unless write/save succeeded
     const out = mode === 'download'
-      ? await downloadOnly(result.blob, result.fileName, mime, { toast })
-      : await shareOrDownload(result.blob, result.fileName, mime, { toast, mode: 'share' });
+      ? await downloadOnly(factory, fileName, mime, { toast })
+      : await shareOrDownload(factory, fileName, mime, { toast, mode: 'share' });
     if (out?.method === 'cancelled') {
       toast('Exportación cancelada', true);
+      return;
     }
+    if (skipped) toast(`${skipped} foto(s) con formato no compatible se han dejado en blanco en el informe.`, true);
     session.lastExportAt = new Date().toISOString();
     session = saveSession(session);
   } catch (e) {
@@ -729,6 +780,7 @@ async function doExport(kind, mode) {
 }
 
 function bindExport() {
+  prepareExports();
   document.getElementById('btn-pptx')?.addEventListener('click', () => doExport('pptx', 'share'));
   document.getElementById('btn-pdf')?.addEventListener('click', () => doExport('pdf', 'share'));
   document.getElementById('btn-pptx-dl')?.addEventListener('click', () => doExport('pptx', 'download'));
@@ -752,4 +804,8 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-render();
+// Acceso recordado en este dispositivo (sin contraseña guardada): se comprueba antes de pintar
+(async () => {
+  if (!isAuthenticated() && await isDeviceRemembered()) setAuthenticated(true);
+  render();
+})();

@@ -6,6 +6,8 @@ import {
 import { DEPT_ORDER } from './config.js';
 import { buildPreviewSlides, locationLabel, commentTitle, statusLabel } from './slides.js';
 import { loadBrandAssets, containRect, dataUrlDimensions } from './assets-load.js';
+import { exportFileName } from './filename.js';
+import { sessionWithNormalizedPhotos } from './image-normalize.js';
 
 const W = SLIDE.w * IN_TO_MM;
 const H = SLIDE.h * IN_TO_MM;
@@ -20,8 +22,7 @@ function hexRgb(hex) {
 }
 
 function safeFileName(session) {
-  const safe = (session.coverTitle || 'informe').replace(/[^\w\-áéíóúñÁÉÍÓÚÑ ]+/gi, '').slice(0, 60).trim() || 'informe';
-  return `${safe.replace(/\s+/g, '_')}.pdf`;
+  return exportFileName(session.coverTitle || 'INFORME INSPECCION', '.pdf');
 }
 
 function fillOval(pdf, boxIn, hex) {
@@ -204,8 +205,17 @@ function addFicha(pdf, assets, model, pageNum) {
 /**
  * PDF 16:9 con la imagen Refresco 2026. Devuelve { blob, fileName } (no escribe a disco).
  */
-export async function exportPdf(session, { assets } = {}) {
+export async function exportPdf(rawSession, { assets } = {}) {
+  const { session, skipped } = await sessionWithNormalizedPhotos(rawSession);
   const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: [W, H], compress: true });
+  pdf.setProperties({
+    title: session.coverTitle || 'Inspección de incidencias de calidad',
+    subject: 'Informe de inspección de incidencias de calidad',
+    author: 'Refresco Iberia · Calidad Planta Alcolea',
+    keywords: 'inspección, calidad, incidencias, Refresco Iberia, Alcolea',
+    creator: 'Inspecciones Calidad Alcolea',
+  });
+  if (typeof pdf.setLanguage === 'function') pdf.setLanguage('es-ES');
   const brand = assets || await loadBrandAssets();
   const slides = buildPreviewSlides(session);
 
@@ -219,7 +229,7 @@ export async function exportPdf(session, { assets } = {}) {
 
   const fileName = safeFileName(session);
   const blob = pdf.output('blob');
-  return { blob, fileName };
+  return { blob, fileName, skipped };
 }
 
 export { buildPreviewSlides } from './slides.js';
