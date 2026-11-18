@@ -1,5 +1,5 @@
 /* Service worker PWA — static assets only; never intercept blob:/data: or downloads */
-const CACHE = 'inspecciones-calidad-v1-5-0';
+const CACHE = 'inspecciones-calidad-v1-5-1';
 const ASSETS = [
   './',
   './index.html',

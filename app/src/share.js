@@ -20,17 +20,32 @@ export function blobToBase64(blob) {
   });
 }
 
+/** Solo AbortError es una cancelación real del usuario (cerró el diálogo / menú compartir). */
 function isUserCancel(err) {
   if (!err) return false;
-  const name = err.name || '';
   const msg = String(err.message || err).toLowerCase();
-  return (
-    name === 'AbortError' ||
-    name === 'NotAllowedError' ||
-    msg.includes('cancel') ||
-    msg.includes('share canceled') ||
-    msg.includes('share cancelled')
-  );
+  return err.name === 'AbortError' || msg.includes('share canceled') || msg.includes('share cancelled');
+}
+
+function extOf(fileName) {
+  return String(fileName).toLowerCase().endsWith('.pdf') ? '.pdf' : '.pptx';
+}
+
+async function resolveBlob(blobOrFactory) {
+  const blob = typeof blobOrFactory === 'function' ? await blobOrFactory() : blobOrFactory;
+  if (!blob || !blob.size) throw new Error('No hay archivo para exportar');
+  return blob;
+}
+
+/** ¿El navegador puede compartir este tipo de archivo? (Chrome/Edge de PC no admiten PPTX). */
+export function webCanShareFile(fileName, mime) {
+  try {
+    if (typeof navigator === 'undefined' || !navigator.share || typeof navigator.canShare !== 'function') return false;
+    const probe = new File([new Uint8Array(1)], fileName, { type: mime || 'application/octet-stream' });
+    return navigator.canShare({ files: [probe] }) === true;
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -130,40 +145,72 @@ export function triggerDownload(blob, fileName) {
 }
 
 /**
- * Web desktop/mobile: File System Access API, else <a download>, PDF also opens in new tab.
+ * Abre «Guardar como» ANTES de generar (el navegador exige el clic reciente del usuario).
+ * Devuelve el handle, 'cancelled', o null si no hay selector o falló (→ descarga normal).
  */
-export async function saveWithPickerOrDownload(blob, fileName, mime, { toast, openPdfTab = false } = {}) {
-  const type = mime || blob.type || 'application/octet-stream';
+export async function pickSaveHandle(fileName, mime) {
+  if (typeof window === 'undefined' || typeof window.showSaveFilePicker !== 'function') return null;
+  const ext = extOf(fileName);
+  const type = ext === '.pdf' ? 'application/pdf' : (mime || 'application/vnd.openxmlformats-officedocument.presentationml.presentation');
+  try {
+    return await window.showSaveFilePicker({
+      suggestedName: fileName,
+      types: [{ description: ext === '.pdf' ? 'Documento PDF' : 'Presentación de PowerPoint', accept: { [type]: [ext] } }],
+      excludeAcceptAllOption: true,
+    });
+  } catch (err) {
+    if (isUserCancel(err)) return 'cancelled';
+    console.warn('[share] showSaveFilePicker no disponible, se usará descarga', err);
+    return null;
+  }
+}
 
-  if (typeof window !== 'undefined' && typeof window.showSaveFilePicker === 'function') {
+async function writeToHandle(handle, blob, fileName, toast) {
+  const ext = extOf(fileName);
+  const writable = await handle.createWritable();
+  await writable.write(blob);
+  await writable.close();
+  let savedName = handle.name || fileName;
+  if (!savedName.toLowerCase().endsWith(ext) && typeof handle.move === 'function') {
+    // Si Windows recortó o cambió la extensión, se corrige para que PowerPoint lo abra
+    const fixed = savedName.replace(/\.[A-Za-z0-9]{1,5}$/, '') + ext;
+    try { await handle.move(fixed); savedName = fixed; } catch { /* se avisa abajo */ }
+  }
+  if (!savedName.toLowerCase().endsWith(ext)) {
+    toast?.(`Guardado como ${savedName}. Cambie la extensión a ${ext} para abrirlo.`, true);
+  } else {
+    toast?.(`Guardado: ${savedName}`);
+  }
+  return { method: 'save-picker', path: savedName };
+}
+
+export function triggerDownloadNamed(blob, fileName, mime) {
+  // El Blob lleva el MIME correcto para que el navegador respete la extensión
+  const typed = blob.type ? blob : new Blob([blob], { type: mime || 'application/octet-stream' });
+  return triggerDownload(typed, fileName);
+}
+
+/**
+ * Web: «Guardar como» (si existe) o descarga normal. PDF además se abre en pestaña nueva.
+ * blobOrFactory puede ser un Blob o una función async que lo genera (se llama tras elegir destino).
+ */
+export async function saveWithPickerOrDownload(blobOrFactory, fileName, mime, { toast, openPdfTab = false, usePicker = true, note = '' } = {}) {
+  const handle = usePicker ? await pickSaveHandle(fileName, mime) : null;
+  if (handle === 'cancelled') return { method: 'cancelled' };
+  const blob = await resolveBlob(blobOrFactory);
+  if (handle) {
     try {
-      const ext = fileName.toLowerCase().endsWith('.pdf') ? '.pdf' : '.pptx';
-      const handle = await window.showSaveFilePicker({
-        suggestedName: fileName,
-        types: [
-          {
-            description: ext === '.pdf' ? 'PDF' : 'PowerPoint',
-            accept: { [type]: [ext] },
-          },
-        ],
-      });
-      const writable = await handle.createWritable();
-      await writable.write(blob);
-      await writable.close();
-      const savedName = handle.name || fileName;
-      toast?.(`Guardado: ${savedName}`);
-      return { method: 'save-picker', path: savedName };
+      const out = await writeToHandle(handle, blob, fileName, toast);
+      if (note) toast?.(note);
+      return out;
     } catch (err) {
-      if (isUserCancel(err)) {
-        return { method: 'cancelled' };
-      }
-      console.warn('[share] showSaveFilePicker failed, falling back to download', err);
+      console.warn('[share] escritura con selector falló, se usa descarga', err);
     }
   }
 
-  triggerDownload(blob, fileName);
+  triggerDownloadNamed(blob, fileName, mime);
 
-  const isPdf = type === 'application/pdf' || fileName.toLowerCase().endsWith('.pdf');
+  const isPdf = extOf(fileName) === '.pdf';
   if (openPdfTab && isPdf && typeof window !== 'undefined') {
     try {
       const url = URL.createObjectURL(blob);
@@ -175,61 +222,62 @@ export async function saveWithPickerOrDownload(blob, fileName, mime, { toast, op
   }
 
   // Honest: browser started a download — user must check Downloads / picker
-  toast?.(
-    `Descarga iniciada: ${fileName}. Revise la carpeta Descargas del navegador.`
-  );
+  toast?.(`${note ? `${note} ` : ''}Descarga iniciada: ${fileName}. Revise la carpeta Descargas del navegador.`);
   return { method: 'download', fileName };
 }
 
 /**
+ * @param {Blob|(() => Promise<Blob>)} blobOrFactory
  * @param {'share'|'download'} mode
  */
-export async function shareOrDownload(blob, fileName, mime, { toast, mode = 'share' } = {}) {
-  if (!blob) throw new Error('No hay archivo para exportar');
+export async function shareOrDownload(blobOrFactory, fileName, mime, { toast, mode = 'share' } = {}) {
+  if (!blobOrFactory) throw new Error('No hay archivo para exportar');
   if (!fileName) throw new Error('Nombre de archivo vacío');
 
   if (Capacitor.isNativePlatform()) {
+    const blob = await resolveBlob(blobOrFactory);
     return saveAndShareNative(blob, fileName, {
       toast,
       wantShare: mode !== 'download',
     });
   }
 
-  // Web Share only when user asked to share AND browser supports files
+  const isPdf = extOf(fileName) === '.pdf';
+  const type = mime || (isPdf ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.presentationml.presentation');
+
+  // Web Share solo si el usuario pidió compartir Y el navegador admite este tipo de archivo
   if (mode === 'share') {
-    try {
-      const file = new File([blob], fileName, {
-        type: mime || blob.type || 'application/octet-stream',
-      });
-      if (
-        typeof navigator !== 'undefined' &&
-        navigator.share &&
-        typeof navigator.canShare === 'function' &&
-        navigator.canShare({ files: [file] })
-      ) {
+    if (webCanShareFile(fileName, type)) {
+      const blob = await resolveBlob(blobOrFactory);
+      try {
+        const file = new File([blob], fileName, { type });
         await navigator.share({ files: [file], title: fileName });
         toast?.('Menú compartir abierto');
         return { method: 'web-share' };
+      } catch (err) {
+        if (isUserCancel(err)) return { method: 'cancelled' };
+        console.warn('[share] Web Share falló, se descarga el archivo', err);
+        // Sin gesto de usuario ya no se puede abrir «Guardar como»: descarga directa
+        return saveWithPickerOrDownload(blob, fileName, type, {
+          toast, openPdfTab: isPdf, usePicker: false,
+          note: 'No se pudo abrir el menú compartir.',
+        });
       }
-    } catch (err) {
-      if (isUserCancel(err)) {
-        return { method: 'cancelled' };
-      }
-      console.warn('[share] Web Share failed, falling back to save', err);
     }
+    // PC (Chrome/Edge/Firefox): no permiten compartir un PowerPoint → se guarda y se avisa
+    return saveWithPickerOrDownload(blobOrFactory, fileName, type, {
+      toast, openPdfTab: isPdf,
+      note: isPdf ? '' : 'Este navegador no comparte PowerPoint directamente; adjunte el archivo guardado en el correo o Teams.',
+    });
   }
 
-  const isPdf =
-    mime === 'application/pdf' || String(fileName).toLowerCase().endsWith('.pdf');
-  // PPTX: always picker/download (no silent false success)
-  // PDF download mode: also open tab as fallback
-  return saveWithPickerOrDownload(blob, fileName, mime, {
+  return saveWithPickerOrDownload(blobOrFactory, fileName, type, {
     toast,
     openPdfTab: isPdf,
   });
 }
 
 /** Explicit download path used by "Solo descargar" buttons */
-export async function downloadOnly(blob, fileName, mime, { toast } = {}) {
-  return shareOrDownload(blob, fileName, mime, { toast, mode: 'download' });
+export async function downloadOnly(blobOrFactory, fileName, mime, { toast } = {}) {
+  return shareOrDownload(blobOrFactory, fileName, mime, { toast, mode: 'download' });
 }

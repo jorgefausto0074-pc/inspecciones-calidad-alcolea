@@ -661,3 +661,12 @@ footer.note em { color: var(--orange); font-weight: 700; }
   *, *::before, *::after { animation: none !important; transition: none !important; }
   .bubbles { display: none; }
 }
+
+/* v1.5.1 · Recordar contraseña + Cerrar sesión (imagen Refresco 2026) */
+.gate label.remember {
+  display: flex; align-items: center; gap: .55rem; justify-content: flex-start;
+  margin: -.35rem 0 1rem; font-size: .92rem; font-weight: 600; color: var(--navy); cursor: pointer;
+}
+.gate label.remember input { width: 20px; height: 20px; margin: 0; accent-color: var(--orange); flex: 0 0 auto; }
+.header button.logout { display: inline-flex; align-items: center; gap: .45rem; font-weight: 700; white-space: nowrap; }
+.header button.logout svg { flex: 0 0 auto; }
