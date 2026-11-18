@@ -1,7 +1,7 @@
 {
   "name": "inspecciones-calidad-android",
   "private": true,
-  "version": "1.5.1",
+  "version": "1.5.2",
   "description": "Capacitor Android wrapper for Inspecciones Calidad",
   "scripts": {
     "sync": "npx cap sync android",

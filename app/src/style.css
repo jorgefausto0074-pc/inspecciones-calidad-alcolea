@@ -670,3 +670,12 @@ footer.note em { color: var(--orange); font-weight: 700; }
 .gate label.remember input { width: 20px; height: 20px; margin: 0; accent-color: var(--orange); flex: 0 0 auto; }
 .header button.logout { display: inline-flex; align-items: center; gap: .45rem; font-weight: 700; white-space: nowrap; }
 .header button.logout svg { flex: 0 0 auto; }
+
+/* v1.5.2 · Aviso «Correo preparado» tras Compartir en PC */
+.export-notice {
+  margin-top: 1rem; padding: .9rem 1rem; border-radius: 12px;
+  background: #FFF1EB; border: 1.5px solid var(--orange); border-left: 6px solid var(--orange);
+  color: var(--navy); font-family: Arial, sans-serif;
+}
+.export-notice strong { display: block; color: var(--navy); margin-bottom: .25rem; }
+.export-notice p { margin: 0 0 .6rem; line-height: 1.4; }

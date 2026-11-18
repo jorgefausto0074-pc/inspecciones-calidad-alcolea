@@ -226,11 +226,72 @@ export async function saveWithPickerOrDownload(blobOrFactory, fileName, mime, { 
   return { method: 'download', fileName };
 }
 
+/** PC de escritorio (no móvil/tablet): allí se guarda el archivo y se abre un correo nuevo. */
+export function isDesktopBrowser() {
+  if (typeof navigator === 'undefined') return false;
+  if (navigator.userAgentData && typeof navigator.userAgentData.mobile === 'boolean') {
+    return !navigator.userAgentData.mobile;
+  }
+  return !/Android|iPhone|iPad|iPod|Mobile|Silk|Kindle/i.test(navigator.userAgent || '');
+}
+
+export function mailSubject(date = new Date()) {
+  return `Informe inspección incidencias calidad – ${date.toLocaleDateString('es-ES')}`;
+}
+
+/** mailto: con asunto y cuerpo en español. El navegador no puede adjuntar archivos a un mailto. */
+export function buildMailto(fileName, savedWhere, date = new Date()) {
+  const body = [
+    'Hola:',
+    '',
+    `Os envío el informe de inspección de incidencias de calidad de Refresco Iberia · Planta Alcolea (${date.toLocaleDateString('es-ES')}).`,
+    '',
+    `[ANTES DE ENVIAR: adjunte el archivo ${fileName} desde ${savedWhere} con el clip «Adjuntar» y borre esta línea]`,
+    '',
+    'Un saludo.',
+  ].join('\r\n');
+  return `mailto:?subject=${encodeURIComponent(mailSubject(date))}&body=${encodeURIComponent(body)}`;
+}
+
+export function openMailDraft(href) {
+  try {
+    const a = document.createElement('a');
+    a.href = href;
+    a.rel = 'noopener';
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    return true;
+  } catch (err) {
+    console.warn('[share] no se pudo abrir el correo', err);
+    return false;
+  }
+}
+
+/**
+ * PC: guardar/descargar y abrir un correo nuevo para adjuntarlo a mano.
+ */
+async function saveThenMail(blobOrFactory, fileName, type, { toast, notify }) {
+  const isPdf = extOf(fileName) === '.pdf';
+  const out = await saveWithPickerOrDownload(blobOrFactory, fileName, type, { toast, openPdfTab: false });
+  if (out.method === 'cancelled') return out;
+  const name = out.method === 'save-picker' ? (out.path || fileName) : fileName;
+  const where = out.method === 'save-picker' ? 'la carpeta donde lo acaba de guardar' : 'la carpeta Descargas';
+  const opened = openMailDraft(buildMailto(name, where));
+  const msg = `El archivo ${name} se ha guardado en ${out.method === 'save-picker' ? 'la carpeta que eligió' : 'Descargas'}. `
+    + (opened ? 'Se ha abierto un correo nuevo: ' : 'Abra un correo nuevo: ')
+    + `el navegador no permite adjuntar archivos automáticamente, así que pulse «Adjuntar» y elija ${name} desde ${where}.`;
+  notify?.(msg);
+  if (!notify) toast?.(msg);
+  return { ...out, method: out.method, mail: opened, kind: isPdf ? 'pdf' : 'pptx' };
+}
+
 /**
  * @param {Blob|(() => Promise<Blob>)} blobOrFactory
  * @param {'share'|'download'} mode
  */
-export async function shareOrDownload(blobOrFactory, fileName, mime, { toast, mode = 'share' } = {}) {
+export async function shareOrDownload(blobOrFactory, fileName, mime, { toast, notify, mode = 'share' } = {}) {
   if (!blobOrFactory) throw new Error('No hay archivo para exportar');
   if (!fileName) throw new Error('Nombre de archivo vacío');
 
@@ -247,6 +308,10 @@ export async function shareOrDownload(blobOrFactory, fileName, mime, { toast, mo
 
   // Web Share solo si el usuario pidió compartir Y el navegador admite este tipo de archivo
   if (mode === 'share') {
+    // PC de escritorio: guardar + correo nuevo (petición de Jorge), también para PDF
+    if (isDesktopBrowser()) {
+      return saveThenMail(blobOrFactory, fileName, type, { toast, notify });
+    }
     if (webCanShareFile(fileName, type)) {
       const blob = await resolveBlob(blobOrFactory);
       try {
@@ -264,11 +329,8 @@ export async function shareOrDownload(blobOrFactory, fileName, mime, { toast, mo
         });
       }
     }
-    // PC (Chrome/Edge/Firefox): no permiten compartir un PowerPoint → se guarda y se avisa
-    return saveWithPickerOrDownload(blobOrFactory, fileName, type, {
-      toast, openPdfTab: isPdf,
-      note: isPdf ? '' : 'Este navegador no comparte PowerPoint directamente; adjunte el archivo guardado en el correo o Teams.',
-    });
+    // Móvil sin soporte para compartir este tipo: guardar + correo nuevo
+    return saveThenMail(blobOrFactory, fileName, type, { toast, notify });
   }
 
   return saveWithPickerOrDownload(blobOrFactory, fileName, type, {

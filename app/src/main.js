@@ -446,7 +446,7 @@ function renderExport() {
       <p>Formato 16:9, agrupado por departamento, 2 fotos por hoja (1 si es impar). Sin límite de páginas.</p>
       <p><strong>Fotos en sesión:</strong> ${session.photos.length}
         ${session.lastExportAt ? ` · Última exportación: ${new Date(session.lastExportAt).toLocaleString('es-ES')}` : ''}</p>
-      <p>En el móvil/APK, <strong>Compartir / guardar</strong> abre el menú del sistema (WhatsApp, Drive, Archivos, correo…).</p>
+      <p>En el móvil/APK, <strong>Compartir / guardar</strong> abre el menú del sistema (WhatsApp, Drive, Archivos, correo…). En el PC guarda el archivo y abre un correo nuevo para adjuntarlo.</p>
       <div class="row">
         <button type="button" id="btn-pptx" ${disabled}>Compartir / guardar PPTX</button>
         <button type="button" id="btn-pdf" class="secondary" ${disabled}>Compartir / guardar PDF</button>
@@ -750,6 +750,23 @@ function prepareExports() {
   }, 300);
 }
 
+/** Aviso fijo en la pantalla Exportar (no desaparece solo, se cierra con ✕). */
+function showExportNotice(msg) {
+  let box = document.getElementById('export-notice');
+  if (!box) {
+    const host = document.querySelector('.export-actions') || app;
+    box = document.createElement('div');
+    box.id = 'export-notice';
+    box.className = 'export-notice';
+    box.setAttribute('role', 'status');
+    host.appendChild(box);
+  }
+  box.innerHTML = '<strong>✉ Correo preparado</strong><p></p><button type="button" class="ghost soft" aria-label="Cerrar aviso">Entendido</button>';
+  box.querySelector('p').textContent = msg;
+  box.querySelector('button').addEventListener('click', () => box.remove());
+  box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
 async function doExport(kind, mode) {
   try {
     const mime = kind === 'pptx' ? PPTX_MIME : 'application/pdf';
@@ -764,7 +781,7 @@ async function doExport(kind, mode) {
     // Helpers toast accurately — never claim "descargado" unless write/save succeeded
     const out = mode === 'download'
       ? await downloadOnly(factory, fileName, mime, { toast })
-      : await shareOrDownload(factory, fileName, mime, { toast, mode: 'share' });
+      : await shareOrDownload(factory, fileName, mime, { toast, notify: showExportNotice, mode: 'share' });
     if (out?.method === 'cancelled') {
       toast('Exportación cancelada', true);
       return;
