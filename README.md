@@ -5,6 +5,13 @@ Aplicación web (PWA) para capturar incidencias de planta en **Refresco Iberia �
 **PRD:** v1.3 (aprobado 2026-09-18)  
 **App:** v1.3.3 — primera versión preparada para un APK firmado con clave de release permanente  
 
+## v1.5.2 (18/11/2026) — PowerPoint 365 abre el informe + correo al compartir en PC
+
+- **Causa real de «PowerPoint no pudo leer»:** pptxgenjs 4.0.1 crea un patrón de notas que comparte `theme1.xml` con el patrón de diapositivas. Si `<p:notesMasterIdLst>` se coloca en su sitio de esquema (lo hacía `pptx-clean.js` desde v1.5.0 para que el Open XML SDK diera 0 errores), PowerPoint 365 no abre el archivo (0x80070570). Los validadores no lo detectan. Ahora el informe se genera **sin notas** (ni patrón de notas ni páginas de notas).
+- Tamaño de diapositiva estándar 16:9: 12192000×6858000 EMU.
+- **Compartir en PC:** guarda/descarga el PPTX o PDF y abre un correo nuevo (asunto «Informe inspección incidencias calidad – fecha») con un aviso para adjuntar el archivo desde Descargas. El navegador no puede adjuntarlo solo. En móvil/APK sigue el menú compartir del sistema.
+- Service worker `inspecciones-calidad-v1-5-2`; APK `versionCode 10`, `versionName 1.5.2`.
+
 ## v1.5.1 (18/11/2026) — PowerPoint corregido + recordar contraseña
 
 - **PPTX abre en PowerPoint de escritorio sin errores:** paquete reconstruido (sin entradas de carpeta, `[Content_Types].xml` primero, solo tipos `image/jpeg`/`image/png` reales). Las fotos WebP/HEIC/AVIF de la galería se convierten a JPEG (máx. 1600 px); si el navegador no puede leer una foto, la ficha queda con el hueco gris y se avisa, en lugar de generar un archivo ilegible.

@@ -220,7 +220,8 @@ function addFicha(pptx, assets, model, pageNum) {
 export async function exportPptx(rawSession, { assets } = {}) {
   const { session, skipped } = await sessionWithNormalizedPhotos(rawSession);
   const pptx = new PptxGenJS();
-  pptx.defineLayout({ name: 'PANORAMICA_16x9', width: W, height: H });
+  // 40/3 in = 12192000 EMU exactos (16:9 estándar de PowerPoint; 13,333 daba 12191695)
+  pptx.defineLayout({ name: 'PANORAMICA_16x9', width: 40 / 3, height: H });
   pptx.layout = 'PANORAMICA_16x9';
   const title = session.coverTitle || 'Inspección de incidencias de calidad';
   pptx.author = 'Refresco Iberia · Calidad Planta Alcolea';

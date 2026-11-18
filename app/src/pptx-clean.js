@@ -76,7 +76,8 @@ function partRank(name) {
  * Deja el PPTX de pptxgenjs listo para PowerPoint de escritorio (Windows/Mac) y en español:
  *  - ZIP reconstruido sin entradas de carpeta, [Content_Types].xml en primer lugar.
  *  - [Content_Types].xml solo con los tipos realmente usados (image/jpeg estándar, sin image/jpg).
- *  - Overrides sin parte eliminados; notesMasterIdLst en su sitio (esquema PresentationML).
+ *  - Sin patrón de notas ni páginas de notas (causa de «PowerPoint no pudo leer», ver v1.5.2).
+ *  - Overrides sin parte eliminados; sldSz 12192000×6858000 (16:9 estándar).
  *  - Imágenes: firma real JPEG/PNG obligatoria (si no, error claro en lugar de un archivo ilegible).
  *  - Idioma es-ES en todos los textos; nombres de diapositivas, formas, tema y diseño en español.
  *  - docProps (core/app) en español y coherentes con el contenido.
@@ -90,6 +91,13 @@ export async function cleanPptxBlob(input, meta = {}) {
     if (entry.dir) continue;
     files.set(name, entry);
   }
+  // 0) Sin notas: pptxgenjs 4.0.1 crea un patrón de notas que comparte theme1.xml con el patrón de
+  //    diapositivas. Con <p:notesMasterIdLst> en su sitio de esquema, PowerPoint 365 no abre el archivo
+  //    (0x80070570), y en el sitio original PowerPoint lo «repara». El informe no usa notas → se quitan.
+  for (const name of [...files.keys()]) {
+    if (/^ppt\/(notesSlides|notesMasters)\//.test(name)) files.delete(name);
+  }
+
   const text = {};
   for (const name of files.keys()) {
     if (/\.(xml|rels)$/i.test(name)) text[name] = await files.get(name).async('string');
@@ -126,14 +134,16 @@ export async function cleanPptxBlob(input, meta = {}) {
     + '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
     + defaults.join('') + overrides.join('') + '</Types>';
 
-  // 3) presentation.xml: notesMasterIdLst justo después de sldMasterIdLst
+  // 3) presentation.xml y relaciones sin notas; tamaños estándar de PowerPoint
   const presName = 'ppt/presentation.xml';
-  let pres = text[presName];
-  const nm = pres.match(/<p:notesMasterIdLst>[\s\S]*?<\/p:notesMasterIdLst>/);
-  if (nm && pres.indexOf(nm[0]) > pres.indexOf('</p:sldMasterIdLst>')) {
-    pres = pres.replace(nm[0], '').replace('</p:sldMasterIdLst>', `</p:sldMasterIdLst>${nm[0]}`);
+  text[presName] = text[presName]
+    .replace(/<p:notesMasterIdLst>[\s\S]*?<\/p:notesMasterIdLst>/g, '')
+    .replace(/<p:sldSz cx="12191695" cy="6858000"\/>/, '<p:sldSz cx="12192000" cy="6858000"/>')
+    .replace(/<p:notesSz [^>]*\/>/, '<p:notesSz cx="6858000" cy="9144000"/>');
+  for (const name of Object.keys(text)) {
+    if (!name.endsWith('.rels')) continue;
+    text[name] = text[name].replace(/\s*<Relationship [^>]*Type="[^"]*\/(notesMaster|notesSlide)"[^>]*\/>/g, '');
   }
-  text[presName] = pres;
 
   // 4) Español: idioma de texto, nombres de diapositivas/formas/tema/diseño
   const themeName = 'Refresco 2026';
@@ -157,7 +167,7 @@ export async function cleanPptxBlob(input, meta = {}) {
   }
 
   // 5) Propiedades del documento en español
-  const notes = [...files.keys()].filter((n) => /^ppt\/notesSlides\/notesSlide\d+\.xml$/.test(n)).length;
+  const notes = 0;
   const nSlides = [...files.keys()].filter((n) => /^ppt\/slides\/slide\d+\.xml$/.test(n)).length;
   const titles = Array.from({ length: nSlides }, (_, i) => slideTitles[i] || `Diapositiva ${i + 1}`);
   text['docProps/core.xml'] = coreXml({

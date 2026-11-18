@@ -1,6 +1,6 @@
 /** Visual brand tokens — informes Refresco 2026 (v1.5.0; exportación PowerPoint corregida v1.5.1). Paleta oficial Styleguide 1.6 / BrandIdentity 2.0. */
 
-export const APP_VERSION = '1.5.1';
+export const APP_VERSION = '1.5.2';
 
 export const COLORS = {
   navy: '#071A40',
